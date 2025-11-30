@@ -7,7 +7,7 @@
 }
 
 .calc-section h2 {
-    color: #3498db;
+    color: #5C4033;
     margin-top: 0;
 }
 
@@ -38,15 +38,15 @@
     border-radius: 4px;
     font-size: 18px;
     font-weight: bold;
-    color: #2e7d32;
+    color: #5C4033;
 }
 
 .back-btn {
-    background: #95a5a6;
+    background: #6B4423;
     margin-bottom: 20px;
 }
 
 .back-btn:hover {
-    background: #7f8c8d;
+    background: #5C4033;
 }
 
