@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Random Number Input</title>
+    <link rel="stylesheet" href="../../css/main.css">
+    <link rel="stylesheet" href="../../css/mathematical.css">
+    <link rel="stylesheet" href="../../css/manualInput.css">
+</head>
+<body>
+    <div class="container">
+        <button class="btn back-btn" onclick="window.location.href='../home.html'">← Back to Main Menu</button>
+        
+        <h1>Manual Random Number Input</h1>
+
+        <div class="info-box">
+            <strong>Instructions:</strong> Enter random numbers separated by commas, spaces, or new lines. Each number should be between 0 and 1.
+        </div>
+
+        <div class="form-container">
+            <h2>Enter Random Numbers</h2>
+            <div class="input-group">
+                <label class="input-label-bold">Random Numbers: *</label>
+                <textarea id="randomInput" placeholder="e.g., 0.123456, 0.654321, 0.987654&#10;or&#10;0.123456 0.654321 0.987654&#10;or one per line"></textarea>
+                <small class="input-hint">Enter random numbers separated by commas, spaces, or new lines</small>
+            </div>
+            <button class="btn" onclick="processManualInput()">Process Numbers</button>
+        </div>
+
+        <div id="resultsSection" class="results-container hidden">
+            <div class="calc-section">
+                <h2>Processed Random Numbers</h2>
+                <div id="randomNumbersDisplay" class="result-numbers"></div>
+                <div class="button-group">
+                    <button class="btn small" onclick="copyNumbers()">Copy Numbers</button>
+                    <button class="btn start-btn" onclick="goToNextPage()">Next →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let processedNumbers = [];
+
+        function processManualInput() {
+            const input = document.getElementById('randomInput').value.trim();
+            
+            if (!input) {
+                alert('Please enter random numbers!');
+                return;
+            }
+
+            // Parse numbers - handle comma, space, or newline separated values
+            const numbers = input
+                .split(/[,\s\n]+/)
+                .map(str => str.trim())
+                .filter(str => str.length > 0)
+                .map(str => parseFloat(str))
+                .filter(num => !isNaN(num) && num >= 0 && num <= 1);
+
+            if (numbers.length === 0) {
+                alert('No valid random numbers found! Please enter numbers between 0 and 1.');
+                return;
+            }
+
+            // Check for invalid numbers
+            const invalidNumbers = input
+                .split(/[,\s\n]+/)
+                .map(str => str.trim())
+                .filter(str => str.length > 0)
+                .filter(str => {
+                    const num = parseFloat(str);
+                    return isNaN(num) || num < 0 || num > 1;
+                });
+
+            if (invalidNumbers.length > 0) {
+                alert(`Warning: ${invalidNumbers.length} invalid number(s) were ignored. Only numbers between 0 and 1 are valid.`);
+            }
+
+            processedNumbers = numbers;
+            displayNumbers(processedNumbers);
+        }
+
+        function displayNumbers(numbers) {
+            const displayDiv = document.getElementById('randomNumbersDisplay');
+            const resultsSection = document.getElementById('resultsSection');
+            
+            let html = `<strong>Total: ${numbers.length} numbers</strong><br><br>`;
+            html += numbers.map((num, index) => {
+                return `${index + 1}. ${num.toFixed(6)}`;
+            }).join('<br>');
+            
+            displayDiv.innerHTML = html;
+            resultsSection.classList.remove('hidden');
+        }
+
+        function copyNumbers() {
+            if (processedNumbers.length === 0) {
+                alert('No numbers processed yet!');
+                return;
+            }
+            
+            const numbersStr = processedNumbers.map(n => n.toFixed(6)).join(', ');
+            navigator.clipboard.writeText(numbersStr).then(() => {
+                alert('Numbers copied to clipboard!');
+            }).catch(() => {
+                alert('Failed to copy. Please select and copy manually.');
+            });
+        }
+
+        function goToNextPage() {
+            if (processedNumbers.length === 0) {
+                alert('Please enter and process random numbers first!');
+                return;
+            }
+            
+            // Store processed numbers in sessionStorage for use in next page
+            sessionStorage.setItem('randomNumbers', JSON.stringify(processedNumbers));
+            sessionStorage.setItem('randomMethod', 'Manual');
+            
+            // Navigate to simulation page
+            window.location.href = '../multiple/multiLimitedCustomer.html';
+        }
+    </script>
+</body>
+</html>
+

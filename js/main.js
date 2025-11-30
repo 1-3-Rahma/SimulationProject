@@ -168,12 +168,54 @@ function updateSummary() {
 }
 
 function startSimulation() {
-    // This function will handle starting the simulation
-    // You can add navigation logic here based on selectedOptions
+    // Check if all required options are selected
+    if (!selectedOptions.mainType || !selectedOptions.subOption || !selectedOptions.randomType) {
+        alert("Please complete all selections before starting!");
+        return;
+    }
+
+    // For multi-service, need multiServiceType
+    if (selectedOptions.subOption === "multi-service" && !selectedOptions.multiServiceType) {
+        alert("Please complete all selections before starting!");
+        return;
+    }
+
+    // For generated random, need method
+    if (selectedOptions.randomType === "generated" && !selectedOptions.method) {
+        alert("Please select a random number generation method!");
+        return;
+    }
+
+    // Navigate based on selections
+    // Multiple Server - Limited by Service Time - Limitation in Arrival Time
+    if (selectedOptions.mainType === "multiple" && 
+        selectedOptions.subOption === "multi-service" && 
+        selectedOptions.multiServiceType === "arrival") {
+        window.location.href = "multiple/multiLimitedServiceArrival.html";
+        return;
+    }
+
+    // Multiple Server - Limited by Customer Number
+    if (selectedOptions.mainType === "multiple" && 
+        selectedOptions.subOption === "multi-customers") {
+        
+        // Navigate to random number input page based on selection
+        if (selectedOptions.randomType === "manual") {
+            window.location.href = "random/manualInput.html";
+            return;
+        } else if (selectedOptions.randomType === "generated") {
+            if (selectedOptions.method === "LCG") {
+                window.location.href = "random/LCG.html";
+                return;
+            } else if (selectedOptions.method === "Mid-Square") {
+                window.location.href = "random/midSquare.html";
+                return;
+            }
+        }
+    }
+ 
+
     console.log("Starting simulation with options:", selectedOptions);
-    alert("Starting simulation with selected options!\n\n" + 
+    alert("Navigation for this combination is not yet implemented.\n\nSelected options:\n" + 
           document.getElementById("summaryText").textContent);
-    
-    // Example: Navigate to appropriate page based on selection
-    // You can implement actual navigation logic here
 }

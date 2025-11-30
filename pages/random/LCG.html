@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LCG - Linear Congruential Generator</title>
+    <link rel="stylesheet" href="../../css/main.css">
+    <link rel="stylesheet" href="../../css/mathematical.css">
+    <link rel="stylesheet" href="../../css/LCG.css">
+</head>
+<body>
+    <div class="container">
+        <button class="btn back-btn" onclick="window.location.href='../home.html'">← Back to Main Menu</button>
+        
+        <h1>Linear Congruential Generator (LCG)</h1>
+
+        <div class="formula-box">
+            <strong>Formula:</strong> <code>Zi = (a × Zi-1 + c) mod m</code>
+        </div>
+
+        <div class="form-container">
+            <h2>Enter Parameters</h2>
+            <div class="input-group">
+                <label>Multiplier (a):</label>
+                <input type="number" id="multiplier" placeholder="e.g., 1664525" value="1664525">
+            </div>
+            <div class="input-group">
+                <label>Increment (c):</label>
+                <input type="number" id="increment" placeholder="e.g., 1013904223" value="1013904223">
+            </div>
+            <div class="input-group">
+                <label>Modulus (m):</label>
+                <input type="number" id="modulus" placeholder="e.g., 2^32" value="4294967296">
+            </div>
+            <div class="input-group">
+                <label>Initial Seed (Z₀):</label>
+                <input type="number" id="initialSeed" placeholder="e.g., 12345" value="12345">
+            </div>
+            <div class="input-group count-input-group">
+                <label>Number of Random Numbers to Generate: *</label>
+                <input type="number" id="count" placeholder="e.g., 10" value="10" min="1" required>
+                <small>Enter how many random numbers you want to generate</small>
+            </div>
+            <button class="btn" onclick="generateLCGNumbers()">Generate Random Numbers</button>
+        </div>
+
+        <div id="resultsSection" class="results-container hidden">
+            <div class="calc-section">
+                <h2>Generated Random Numbers</h2>
+                <div id="randomNumbersDisplay" class="result-numbers"></div>
+                <div class="button-group">
+                    <button class="btn small" onclick="copyNumbers()">Copy Numbers</button>
+                    <button class="btn start-btn" onclick="goToNextPage()">Next →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/randomNumbers.js"></script>
+    <script>
+        let generatedNumbers = [];
+
+        function generateLCGNumbers() {
+            const a = parseFloat(document.getElementById('multiplier').value);
+            const c = parseFloat(document.getElementById('increment').value);
+            const m = parseFloat(document.getElementById('modulus').value);
+            const initialZ = parseFloat(document.getElementById('initialSeed').value);
+            const count = parseInt(document.getElementById('count').value);
+
+            // Validation
+            if (isNaN(a) || isNaN(c) || isNaN(m) || isNaN(initialZ)) {
+                alert('Please enter all LCG parameters (a, c, m, initial seed)!');
+                return;
+            }
+
+            if (isNaN(count) || count === '') {
+                alert('Please specify the number of random numbers you want to generate!');
+                return;
+            }
+
+            if (m <= 0) {
+                alert('Modulus (m) must be greater than 0!');
+                return;
+            }
+
+            if (count <= 0) {
+                alert('Number of random numbers must be greater than 0!');
+                return;
+            }
+
+            if (count > 10000) {
+                if (!confirm(`You are requesting ${count} random numbers. This may take a moment. Continue?`)) {
+                    return;
+                }
+            }
+
+            try {
+                generatedNumbers = generateLCG(a, c, m, initialZ, count);
+                displayNumbers(generatedNumbers);
+            } catch (error) {
+                alert('Error generating numbers: ' + error.message);
+            }
+        }
+
+        function displayNumbers(numbers) {
+            const displayDiv = document.getElementById('randomNumbersDisplay');
+            const resultsSection = document.getElementById('resultsSection');
+            
+            let html = `<strong>Total: ${numbers.length} numbers</strong><br><br>`;
+            html += numbers.map((num, index) => {
+                return `${index + 1}. ${num.toFixed(6)}`;
+            }).join('<br>');
+            
+            displayDiv.innerHTML = html;
+            resultsSection.classList.remove('hidden');
+        }
+
+        function copyNumbers() {
+            if (generatedNumbers.length === 0) {
+                alert('No numbers generated yet!');
+                return;
+            }
+            
+            const numbersStr = generatedNumbers.map(n => n.toFixed(6)).join(', ');
+            navigator.clipboard.writeText(numbersStr).then(() => {
+                alert('Numbers copied to clipboard!');
+            }).catch(() => {
+                alert('Failed to copy. Please select and copy manually.');
+            });
+        }
+
+        function goToNextPage() {
+            if (generatedNumbers.length === 0) {
+                alert('Please generate random numbers first!');
+                return;
+            }
+            
+            // Store generated numbers in sessionStorage for use in next page
+            sessionStorage.setItem('randomNumbers', JSON.stringify(generatedNumbers));
+            sessionStorage.setItem('randomMethod', 'LCG');
+            
+            // Navigate to simulation page
+            window.location.href = '../multiple/multiLimitedCustomer.html';
+        }
+    </script>
+</body>
+</html>
+
