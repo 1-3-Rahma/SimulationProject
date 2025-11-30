@@ -26,9 +26,18 @@
             <button class="btn small" onclick="selectRandom('generated')">Generated</button>
 
             <div id="generatedMethods" class="hidden">
-                <button class="btn tiny">LCG</button>
-                <button class="btn tiny">Mid-Square</button>
+                <button class="btn tiny" onclick="selectMethod('LCG')">LCG</button>
+                <button class="btn tiny" onclick="selectMethod('Mid-Square')">Mid-Square</button>
             </div>
+        </div>
+
+        <!-- Summary and Start Button -->
+        <div id="summarySection" class="hidden">
+            <div class="summary-box">
+                <h3>Selection Summary</h3>
+                <p id="summaryText"></p>
+            </div>
+            <button class="btn start-btn" onclick="startSimulation()">Start</button>
         </div>
 
     </div>
