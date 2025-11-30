@@ -125,8 +125,33 @@
             sessionStorage.setItem('randomNumbers', JSON.stringify(generatedNumbers));
             sessionStorage.setItem('randomMethod', 'Mid-Square');
             
-            // Navigate to simulation page
-            window.location.href = '../multiple/multiLimitedCustomer.html';
+            // Get simulation options from sessionStorage to determine destination
+            const simulationOptionsStr = sessionStorage.getItem('simulationOptions');
+            let destinationPage = '../multiple/multiLimitedCustomer.html'; // Default
+            
+            if (simulationOptionsStr) {
+                try {
+                    const simulationOptions = JSON.parse(simulationOptionsStr);
+                    
+                    // Determine destination based on selections
+                    if (simulationOptions.mainType === 'multiple') {
+                        if (simulationOptions.subOption === 'multi-customers') {
+                            destinationPage = '../multiple/multiLimitedCustomer.html';
+                        } else if (simulationOptions.subOption === 'multi-service') {
+                            if (simulationOptions.multiServiceType === 'arrival') {
+                                destinationPage = '../multiple/multiLimitedServiceArrival.html';
+                            } else if (simulationOptions.multiServiceType === 'end') {
+                                destinationPage = '../multiple/multiLimitedServiceEnd.html';
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error parsing simulation options:', e);
+                }
+            }
+            
+            // Navigate to appropriate simulation page
+            window.location.href = destinationPage;
         }
     </script>
 </body>

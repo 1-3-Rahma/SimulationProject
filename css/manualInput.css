@@ -29,15 +29,69 @@
     font-size: 14px;
 }
 
-textarea {
-    width: 100%;
+.count-input-group {
+    background: #F5E6D3;
+    padding: 15px;
+    border-radius: 8px;
+    border: 2px solid #8B4513;
+}
+
+.count-input-group label {
+    font-size: 18px;
+    color: #5C4033;
+    font-weight: bold;
+}
+
+.count-input-group input {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.count-input-group small {
+    color: #6B4423;
+    display: block;
+    margin-top: 5px;
+}
+
+.input-cells-wrapper {
+    max-height: 400px;
+    overflow-y: auto;
+    margin: 20px 0;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    border: 2px solid #D2B48C;
+}
+
+.input-cell-wrapper {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.cell-label {
+    min-width: 40px;
+    font-weight: bold;
+    color: #5C4033;
+    font-size: 16px;
+}
+
+.random-number-cell {
+    flex: 1;
     padding: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 16px;
     box-sizing: border-box;
     font-family: 'Courier New', monospace;
-    min-height: 150px;
+    transition: border-color 0.3s;
+}
+
+.random-number-cell:focus {
+    outline: none;
+    border-color: #8B4513;
+    box-shadow: 0 0 5px rgba(139, 69, 19, 0.3);
 }
 
 .input-label-bold {

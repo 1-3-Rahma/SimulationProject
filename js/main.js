@@ -187,17 +187,38 @@ function startSimulation() {
     }
 
     // Navigate based on selections
-    // Multiple Server - Limited by Service Time - Limitation in Arrival Time
+    // Multiple Server - Limited by Service Time
     if (selectedOptions.mainType === "multiple" && 
-        selectedOptions.subOption === "multi-service" && 
-        selectedOptions.multiServiceType === "arrival") {
-        window.location.href = "multiple/multiLimitedServiceArrival.html";
-        return;
+        selectedOptions.subOption === "multi-service") {
+
+        // Store selections in sessionStorage for use in random number pages
+        sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
+
+        if(selectedOptions.randomType === "manual"){
+            window.location.href = "random/manualInput.html";
+            return;
+        }
+        else{
+            if(selectedOptions.multiServiceType === "arrival"){
+                window.location.href = "multiple/multiLimitedServiceArrival.html";
+                return;
+            }
+            else if (selectedOptions.multiServiceType === "end"){
+                window.location.href = "multiple/multiLimitedServiceEnd.html";
+                return;
+            }
+        }
     }
+
+
+
 
     // Multiple Server - Limited by Customer Number
     if (selectedOptions.mainType === "multiple" && 
         selectedOptions.subOption === "multi-customers") {
+        
+        // Store selections in sessionStorage for use in random number pages
+        sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
         
         // Navigate to random number input page based on selection
         if (selectedOptions.randomType === "manual") {
@@ -212,6 +233,17 @@ function startSimulation() {
                 return;
             }
         }
+    }
+
+    // Multiple Server - Limited by Service Time - Manual input
+    if (selectedOptions.mainType === "multiple" && 
+        selectedOptions.subOption === "multi-service" &&
+        selectedOptions.randomType === "manual") {
+        
+        // Store selections in sessionStorage for use in random number pages
+        sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
+        window.location.href = "random/manualInput.html";
+        return;
     }
  
 
