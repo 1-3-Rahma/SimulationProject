@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Page</title>
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Main Menu</h1>
+
+        <button class="btn" onclick="selectOption('math')">Mathematical Calculations</button>
+        <button class="btn" onclick="selectOption('single')">Single Server</button>
+        <button class="btn" onclick="selectOption('multiple')">Multiple Server (2 Servers)</button>
+        <button class="btn" onclick="selectOption('inventory')">Inventory</button>
+
+        <!-- Sub-options container -->
+        <div id="subOptions" class="hidden"></div>
+
+        <!-- Random number options -->
+        <div id="randomOptions" class="hidden">
+            <h3>Random Number Options</h3>
+            <button class="btn small" onclick="selectRandom('manual')">Manual</button>
+            <button class="btn small" onclick="selectRandom('generated')">Generated</button>
+
+            <div id="generatedMethods" class="hidden">
+                <button class="btn tiny">LCG</button>
+                <button class="btn tiny">Mid-Square</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="../js/main.js"></script>
+</body>
+</html>
