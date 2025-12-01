@@ -191,22 +191,24 @@ function startSimulation() {
     if (selectedOptions.mainType === "multiple" && 
         selectedOptions.subOption === "multi-service") {
 
-        // Store selections in sessionStorage for use in random number pages
+        // Store selections in sessionStorage for use in simulation pages
         sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
+        
+        // Store random method if it's generated
+        if (selectedOptions.randomType === "generated" && selectedOptions.method) {
+            sessionStorage.setItem('randomMethod', selectedOptions.method);
+        } else if (selectedOptions.randomType === "manual") {
+            sessionStorage.setItem('randomMethod', 'Manual');
+        }
 
-        if(selectedOptions.randomType === "manual"){
-            window.location.href = "random/manualInput.html";
+        // For multi-service, go directly to simulation pages (not manual input page)
+        if(selectedOptions.multiServiceType === "arrival"){
+            window.location.href = "multiple/multiLimitedServiceArrival.html";
             return;
         }
-        else{
-            if(selectedOptions.multiServiceType === "arrival"){
-                window.location.href = "multiple/multiLimitedServiceArrival.html";
-                return;
-            }
-            else if (selectedOptions.multiServiceType === "end"){
-                window.location.href = "multiple/multiLimitedServiceEnd.html";
-                return;
-            }
+        else if (selectedOptions.multiServiceType === "end"){
+            window.location.href = "multiple/multiLimitedServiceEnd.html";
+            return;
         }
     }
 
