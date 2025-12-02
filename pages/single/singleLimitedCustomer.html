@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single Server - Limited Customers</title>
+    <link rel="stylesheet" href="../../css/main.css">
+    <link rel="stylesheet" href="../../css/mathematical.css">
+</head>
+<body>
+    <div class="container">
+        <button class="btn back-btn" onclick="window.location.href='singleOptions.html'">← Back to Single Options</button>
+
+        <h1>Single Server - Limited Customers</h1>
+
+        <div class="calc-section">
+            <h2>Setup</h2>
+            <p style="font-size: 14px; color: #666; margin-top: 0;">
+                Enter the number of customers and how many rows you want in the inter-arrival and service distribution tables. The tables will be created automatically.
+            </p>
+
+            <div class="input-group">
+                <label>Number of Customers (N):</label>
+                <input type="number" id="numCustomers" min="1" max="100" autocomplete="off" oninput="if (this.value < 1) this.value = 1;">
+            </div>
+
+            <div class="input-group">
+                <label>Number of Inter-arrival Distribution Rows:</label>
+                <input type="number" id="numInterarrivalRows" min="1" max="100" autocomplete="off" oninput="if (this.value < 1) this.value = 1;">
+            </div>
+
+            <div class="input-group">
+                <label>Number of Service Distribution Rows:</label>
+                <input type="number" id="numServiceRows" min="1" max="100" autocomplete="off" oninput="if (this.value < 1) this.value = 1;">
+            </div>
+
+            <button class="btn small" onclick="createDistributionTables()">Create Distribution Tables</button>
+        </div>
+
+        <div class="calc-section" id="interarrivalDistSection" style="display:none; overflow-x:auto;">
+            <h2>Inter-arrival Time Distribution Table</h2>
+            <div id="interarrivalDistTableContainer"></div>
+        </div>
+
+        <div class="calc-section" id="serviceDistSection" style="display:none; overflow-x:auto;">
+            <h2>Service Time Distribution Table</h2>
+            <div id="serviceDistTableContainer"></div>
+        </div>
+
+        <div class="calc-section" id="probCalcSection" style="display:none;">
+            <h2>Probabilities &amp; Random Digit Assignment</h2>
+            <p style="font-size: 14px; color: #666; margin-top: 0;">
+                After you enter probabilities in both distribution tables, specify the random digit scale and click this button to calculate cumulative probabilities 
+                and random digit assignment ranges.
+            </p>
+            <div class="input-group">
+                <label>Random Digit Scale (e.g., 100 for 2-digit, 1000 for 3-digit, 10000 for 4-digit):</label>
+                <input type="number" id="randomDigitScale" min="10" step="10" autocomplete="off" placeholder="100">
+            </div>
+            <button class="btn small" onclick="calculateDistributions()">Calculate Cumulative Probabilities &amp; Ranges</button>
+        </div>
+
+        <div class="calc-section" id="simulationTablesSection" style="display:none;">
+            <h2>Simulation Tables</h2>
+            <p style="font-size: 14px; color: #666; margin-top: 0;">
+                Enter random digits for each customer. The inter-arrival and service times will be automatically looked up from the distribution tables above.
+            </p>
+        </div>
+
+        <div class="calc-section" id="interarrivalSimSection" style="display:none; overflow-x:auto;">
+            <h2>Inter-arrival Time Simulation Table</h2>
+            <div id="interarrivalSimTableContainer"></div>
+        </div>
+
+        <div class="calc-section" id="serviceSimSection" style="display:none; overflow-x:auto;">
+            <h2>Service Time Simulation Table</h2>
+            <div id="serviceSimTableContainer"></div>
+        </div>
+
+        <div class="calc-section" id="lookupButtonSection" style="display:none;">
+            <button class="btn small" onclick="lookupTimesFromRandomDigits()">Lookup Times from Random Digits</button>
+        </div>
+
+        <div class="calc-section" id="runSimSection" style="display:none;">
+            <h2>Run Queue Simulation</h2>
+            <p style="font-size: 14px; color: #666; margin-top: 0;">
+                After the times are looked up in the simulation tables above, click this button to run the queue simulation.
+            </p>
+            <button class="btn small" onclick="runSimulationFromTables()">Run Queue Simulation</button>
+        </div>
+
+        <!-- <div class="calc-section">
+            <h2>Direct Input (optional)</h2>
+            <p style="font-size: 14px; color: #666; margin-top: 0;">
+                You can also enter interarrival and service times directly as comma-separated lists and run the simulation.
+            </p>
+
+            <div class="input-group">
+                <label>Interarrival Times (minutes, comma-separated, leave first customer blank or 0):</label>
+                <input type="text" id="interarrivalInput" placeholder="e.g., 0, 8, 6, 1, 8, 3, ...">
+            </div>
+
+            <div class="input-group">
+                <label>Service Times (minutes, comma-separated):</label>
+                <input type="text" id="serviceInput" placeholder="e.g., 4, 1, 4, 3, 2, 4, ...">
+            </div>
+
+            <button class="btn small" onclick="runSingleLimitedCustomerSimulation()">Run Simulation</button>
+        </div> -->
+
+        <div class="calc-section" id="tableSection" style="overflow-x:auto; display:none;">
+            <h2>Simulation Table</h2>
+            <table id="simulationTable" style="width:100%; border-collapse: collapse; font-size: 14px;">
+                <thead>
+                    <tr style="background:#F5E6D3;">
+                        <th style="border:1px solid #D2B48C; padding:6px;">Customer</th>
+                        <th style="border:1px solid #D2B48C; padding:6px;">Interarrival Time</th>
+                        <th style="border:1px solid #D2B48C; padding:6px;">Arrival Time</th>
+                        <th style="border:1px solid #D2B48C; padding:6px;">Service Time</th>
+                        <th style="border:1px solid #D2B48C; padding:6px;">Time Service Begins</th>
+                        <th style="border:1px solid #D2B48C; padding:6px;">Time Service Ends</th>
+                        <th style="border:1px solid #D2B48C; padding:6px;">Waiting Time in Queue</th>
+                        <th style="border:1px solid #D2B48C; padding:6px;">Time in System</th>
+                        <th style="border:1px solid #D2B48C; padding:6px;">Idle Time of Server</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="calc-section" id="resultsSection" style="display:none;">
+            <h2>Performance Measures</h2>
+            <div id="queueResults" class="result"></div>
+        </div>
+    </div>
+
+    <script src="../../js/singleServer/singleLimitedCustomer.js"></script>
+</body>
+</html>
+
+

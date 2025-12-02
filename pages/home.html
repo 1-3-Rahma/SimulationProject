@@ -11,15 +11,15 @@
     <div class="container">
         <h1>Main Menu</h1>
 
-        <button class="btn" onclick="selectOption('math')">Mathematical Calculations</button>
-        <button class="btn" onclick="selectOption('single')">Single Server</button>
+        <button class="btn" onclick="window.location.href='mathematical.html'">Mathematical Calculations</button>
+        <button class="btn" onclick="window.location.href='single/singleOptions.html'">Single Server</button>
         <button class="btn" onclick="selectOption('multiple')">Multiple Server (2 Servers)</button>
         <button class="btn" onclick="selectOption('inventory')">Inventory</button>
 
-        <!-- Sub-options container -->
+        <!-- Sub-options container (used only for Multiple Server & Inventory for now) -->
         <div id="subOptions" class="hidden"></div>
 
-        <!-- Random number options -->
+        <!-- Random number options (used only for Multiple Server & Inventory for now) -->
         <div id="randomOptions" class="hidden">
             <h3>Random Number Options</h3>
             <button class="btn small" onclick="selectRandom('manual')">Manual</button>
@@ -31,7 +31,7 @@
             </div>
         </div>
 
-        <!-- Summary and Start Button -->
+        <!-- Summary and Start Button (used only for Multiple Server & Inventory for now) -->
         <div id="summarySection" class="hidden">
             <div class="summary-box">
                 <h3>Selection Summary</h3>
