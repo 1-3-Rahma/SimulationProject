@@ -45,7 +45,7 @@
 
                 <div class="input-group">
                     <label>Enter number of customers to simulate:</label>
-                    <input type="number" id="numCustomers" value="10" min="1" max="100">
+                    <input type="number" id="numCustomers" min="1" max="100" placeholder="e.g., 10">
                     <small>(Simulation will stop after this many customers)</small>
                 </div>
 
@@ -80,24 +80,24 @@
                         <tbody id="tbodyArrival">
                             <tr>
                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteArrivalRow(this)" title="Delete row">🗑️</button></td>
-                                <td><input type="number" class="table-input" step="0.1" value="1" onchange="calculateArrivalTable()"></td>
-                                <td><input type="number" class="table-input" step="0.01" value="0.25" onchange="calculateArrivalTable()"></td>
-                                <td class="calculated-cell">0.25000</td>
-                                <td class="calculated-cell">01-25</td>
+                                <td><input type="number" class="table-input" step="0.1" placeholder="Time" onchange="calculateArrivalTable()"></td>
+                                <td><input type="number" class="table-input" step="0.01" placeholder="Prob" onchange="calculateArrivalTable()"></td>
+                                <td class="calculated-cell"></td>
+                                <td class="calculated-cell"></td>
                             </tr>
                             <tr>
                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteArrivalRow(this)" title="Delete row">🗑️</button></td>
-                                <td><input type="number" class="table-input" step="0.1" value="2" onchange="calculateArrivalTable()"></td>
-                                <td><input type="number" class="table-input" step="0.01" value="0.40" onchange="calculateArrivalTable()"></td>
-                                <td class="calculated-cell">0.65000</td>
-                                <td class="calculated-cell">26-65</td>
+                                <td><input type="number" class="table-input" step="0.1" placeholder="Time" onchange="calculateArrivalTable()"></td>
+                                <td><input type="number" class="table-input" step="0.01" placeholder="Prob" onchange="calculateArrivalTable()"></td>
+                                <td class="calculated-cell"></td>
+                                <td class="calculated-cell"></td>
                             </tr>
                             <tr>
                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteArrivalRow(this)" title="Delete row">🗑️</button></td>
-                                <td><input type="number" class="table-input" step="0.1" value="3" onchange="calculateArrivalTable()"></td>
-                                <td><input type="number" class="table-input" step="0.01" value="0.35" onchange="calculateArrivalTable()"></td>
-                                <td class="calculated-cell">1.00000</td>
-                                <td class="calculated-cell">66-100</td>
+                                <td><input type="number" class="table-input" step="0.1" placeholder="Time" onchange="calculateArrivalTable()"></td>
+                                <td><input type="number" class="table-input" step="0.01" placeholder="Prob" onchange="calculateArrivalTable()"></td>
+                                <td class="calculated-cell"></td>
+                                <td class="calculated-cell"></td>
                             </tr>
                         </tbody>
                     </table>
@@ -122,9 +122,7 @@
                         <div class="table-controls">
                             <button class="btn-add-row" onclick="addServiceRow(1)"> Add Row</button>
                         </div>
-                        <textarea id="txtS1" rows="4" placeholder="Alternative: Enter time,prob (one per line)" style="margin-bottom: 15px; display: none;">2,0.30
-3,0.50
-4,0.20</textarea>
+                        <textarea id="txtS1" rows="4" placeholder="Alternative: Enter time,prob (one per line)" style="margin-bottom: 15px; display: none;"></textarea>
                         <h4>Table</h4>
                         <div class="table-container">
                             <table id="tableS1" class="editable-table">
@@ -140,24 +138,24 @@
                                 <tbody id="tbodyS1">
                                     <tr>
                                         <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, 1)" title="Delete row">🗑️</button></td>
-                                        <td><input type="number" class="table-input" step="0.1" value="2" onchange="calculateServiceTable(1)"></td>
-                                        <td><input type="number" class="table-input" step="0.01" value="0.30" onchange="calculateServiceTable(1)"></td>
-                                        <td class="calculated-cell">0.30000</td>
-                                        <td class="calculated-cell">01-30</td>
+                                        <td><input type="number" class="table-input" step="0.1" placeholder="Time" onchange="calculateServiceTable(1)"></td>
+                                        <td><input type="number" class="table-input" step="0.01" placeholder="Prob" onchange="calculateServiceTable(1)"></td>
+                                        <td class="calculated-cell"></td>
+                                        <td class="calculated-cell"></td>
                                     </tr>
                                     <tr>
                                         <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, 1)" title="Delete row">🗑️</button></td>
-                                        <td><input type="number" class="table-input" step="0.1" value="3" onchange="calculateServiceTable(1)"></td>
-                                        <td><input type="number" class="table-input" step="0.01" value="0.50" onchange="calculateServiceTable(1)"></td>
-                                        <td class="calculated-cell">0.80000</td>
-                                        <td class="calculated-cell">31-80</td>
+                                        <td><input type="number" class="table-input" step="0.1" placeholder="Time" onchange="calculateServiceTable(1)"></td>
+                                        <td><input type="number" class="table-input" step="0.01" placeholder="Prob" onchange="calculateServiceTable(1)"></td>
+                                        <td class="calculated-cell"></td>
+                                        <td class="calculated-cell"></td>
                                     </tr>
                                     <tr>
                                         <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, 1)" title="Delete row">🗑️</button></td>
-                                        <td><input type="number" class="table-input" step="0.1" value="4" onchange="calculateServiceTable(1)"></td>
-                                        <td><input type="number" class="table-input" step="0.01" value="0.20" onchange="calculateServiceTable(1)"></td>
-                                        <td class="calculated-cell">1.00000</td>
-                                        <td class="calculated-cell">81-100</td>
+                                        <td><input type="number" class="table-input" step="0.1" placeholder="Time" onchange="calculateServiceTable(1)"></td>
+                                        <td><input type="number" class="table-input" step="0.01" placeholder="Prob" onchange="calculateServiceTable(1)"></td>
+                                        <td class="calculated-cell"></td>
+                                        <td class="calculated-cell"></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -170,9 +168,7 @@
                         <div class="table-controls">
                             <button class="btn-add-row" onclick="addServiceRow(2)"> Add Row</button>
                         </div>
-                        <textarea id="txtS2" rows="4" placeholder="Alternative: Enter time,prob (one per line)" style="margin-bottom: 15px; display: none;">1,0.40
-2,0.35
-3,0.25</textarea>
+                        <textarea id="txtS2" rows="4" placeholder="Alternative: Enter time,prob (one per line)" style="margin-bottom: 15px; display: none;"></textarea>
                         <h4>Table</h4>
                         <div class="table-container">
                             <table id="tableS2" class="editable-table">
@@ -188,24 +184,24 @@
                                 <tbody id="tbodyS2">
                                     <tr>
                                         <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, 2)" title="Delete row">🗑️</button></td>
-                                        <td><input type="number" class="table-input" step="0.1" value="1" onchange="calculateServiceTable(2)"></td>
-                                        <td><input type="number" class="table-input" step="0.01" value="0.40" onchange="calculateServiceTable(2)"></td>
-                                        <td class="calculated-cell">0.40000</td>
-                                        <td class="calculated-cell">01-40</td>
+                                        <td><input type="number" class="table-input" step="0.1" placeholder="Time" onchange="calculateServiceTable(2)"></td>
+                                        <td><input type="number" class="table-input" step="0.01" placeholder="Prob" onchange="calculateServiceTable(2)"></td>
+                                        <td class="calculated-cell"></td>
+                                        <td class="calculated-cell"></td>
                                     </tr>
                                     <tr>
                                         <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, 2)" title="Delete row">🗑️</button></td>
-                                        <td><input type="number" class="table-input" step="0.1" value="2" onchange="calculateServiceTable(2)"></td>
-                                        <td><input type="number" class="table-input" step="0.01" value="0.35" onchange="calculateServiceTable(2)"></td>
-                                        <td class="calculated-cell">0.75000</td>
-                                        <td class="calculated-cell">41-75</td>
+                                        <td><input type="number" class="table-input" step="0.1" placeholder="Time" onchange="calculateServiceTable(2)"></td>
+                                        <td><input type="number" class="table-input" step="0.01" placeholder="Prob" onchange="calculateServiceTable(2)"></td>
+                                        <td class="calculated-cell"></td>
+                                        <td class="calculated-cell"></td>
                                     </tr>
                                     <tr>
                                         <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, 2)" title="Delete row">🗑️</button></td>
-                                        <td><input type="number" class="table-input" step="0.1" value="3" onchange="calculateServiceTable(2)"></td>
-                                        <td><input type="number" class="table-input" step="0.01" value="0.25" onchange="calculateServiceTable(2)"></td>
-                                        <td class="calculated-cell">1.00000</td>
-                                        <td class="calculated-cell">76-100</td>
+                                        <td><input type="number" class="table-input" step="0.1" placeholder="Time" onchange="calculateServiceTable(2)"></td>
+                                        <td><input type="number" class="table-input" step="0.01" placeholder="Prob" onchange="calculateServiceTable(2)"></td>
+                                        <td class="calculated-cell"></td>
+                                        <td class="calculated-cell"></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -259,15 +255,15 @@
                                         <tbody id="tbodyRnArr">
                                             <tr>
                                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'arrival')" title="Delete row">🗑️</button></td>
-                                                <td><input type="number" class="table-input" min="1" max="100" value="10" placeholder="1-100"></td>
+                                                <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
                                             </tr>
                                             <tr>
                                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'arrival')" title="Delete row">🗑️</button></td>
-                                                <td><input type="number" class="table-input" min="1" max="100" value="50" placeholder="1-100"></td>
+                                                <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
                                             </tr>
                                             <tr>
                                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'arrival')" title="Delete row">🗑️</button></td>
-                                                <td><input type="number" class="table-input" min="1" max="100" value="80" placeholder="1-100"></td>
+                                                <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -292,15 +288,15 @@
                                         <tbody id="tbodyRnServ">
                                             <tr>
                                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'service')" title="Delete row">🗑️</button></td>
-                                                <td><input type="number" class="table-input" min="1" max="100" value="20" placeholder="1-100"></td>
+                                                <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
                                             </tr>
                                             <tr>
                                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'service')" title="Delete row">🗑️</button></td>
-                                                <td><input type="number" class="table-input" min="1" max="100" value="65" placeholder="1-100"></td>
+                                                <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
                                             </tr>
                                             <tr>
                                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'service')" title="Delete row">🗑️</button></td>
-                                                <td><input type="number" class="table-input" min="1" max="100" value="40" placeholder="1-100"></td>
+                                                <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -336,19 +332,19 @@
                             <div class="params-grid">
                                 <div class="input-group">
                                     <label>Multiplier (a):</label>
-                                    <input type="number" id="lcgA" value="1664525" placeholder="e.g., 1664525">
+                                    <input type="number" id="lcgA" placeholder="e.g., 1664525">
                                 </div>
                                 <div class="input-group">
                                     <label>Increment (c):</label>
-                                    <input type="number" id="lcgC" value="1013904223" placeholder="e.g., 1013904223">
+                                    <input type="number" id="lcgC" placeholder="e.g., 1013904223">
                                 </div>
                                 <div class="input-group">
                                     <label>Modulus (m):</label>
-                                    <input type="number" id="lcgM" value="4294967296" placeholder="e.g., 2^32">
+                                    <input type="number" id="lcgM" placeholder="e.g., 2^32">
                                 </div>
                                 <div class="input-group">
                                     <label>Initial Seed (Z₀):</label>
-                                    <input type="number" id="lcgSeed" value="12345" placeholder="e.g., 12345">
+                                    <input type="number" id="lcgSeed" placeholder="e.g., 12345">
                                 </div>
                             </div>
                         </div>
@@ -358,19 +354,19 @@
                             <h4>Mid-Square Parameters</h4>
                             <div class="input-group">
                                 <label>Seed (4-digit, 1000-9999):</label>
-                                <input type="number" id="midSquareSeed" value="1234" min="1000" max="9999" placeholder="e.g., 1234">
+                                <input type="number" id="midSquareSeed" min="1000" max="9999" placeholder="e.g., 1234">
                             </div>
                         </div>
                         
                         <div class="input-group">
                             <label>Number of Arrival Random Numbers:</label>
-                            <input type="number" id="genArrCount" value="20" min="1" placeholder="e.g., 20">
+                            <input type="number" id="genArrCount" min="1" placeholder="e.g., 20">
                             <small>For customers 2..N</small>
                         </div>
                         
                         <div class="input-group">
                             <label>Number of Service Random Numbers:</label>
-                            <input type="number" id="genServCount" value="20" min="1" placeholder="e.g., 20">
+                            <input type="number" id="genServCount" min="1" placeholder="e.g., 20">
                             <small>For both servers</small>
                         </div>
                         
