@@ -257,9 +257,6 @@ function calculateArrivalTable() {
         }
         
         const total = dist.reduce((sum, [_, p]) => sum + p, 0);
-        if (Math.abs(total - 1.0) > 1e-6) {
-            alert(`Warning: Probabilities sum to ${total.toFixed(6)}, not 1.0. Please adjust.`);
-        }
         
         const table = buildCumulativeIntervals(dist);
         arrivalTable = table;
@@ -374,9 +371,6 @@ function calculateServiceTable(serverId) {
         }
         
         const total = dist.reduce((sum, [_, p]) => sum + p, 0);
-        if (Math.abs(total - 1.0) > 1e-6) {
-            alert(`Warning: Probabilities sum to ${total.toFixed(6)}, not 1.0. Please adjust.`);
-        }
         
         const table = buildCumulativeIntervals(dist);
         
