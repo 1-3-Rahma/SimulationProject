@@ -177,3 +177,421 @@
     }
 }
 
+/* ========== Tab Navigation Styles ========== */
+.tabs-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 30px 0;
+    border-bottom: 3px solid #8B4513;
+    padding-bottom: 10px;
+}
+
+.tab-btn {
+    padding: 12px 20px;
+    background: #D2B48C;
+    color: #5C4033;
+    border: 2px solid #8B4513;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 150px;
+}
+
+.tab-btn:hover {
+    background: #CD853F;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+    color: white;
+    border-bottom: 3px solid #8B4513;
+    position: relative;
+    bottom: -3px;
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tab-body {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(139, 69, 19, 0.2);
+    margin-top: 20px;
+}
+
+.tab-body h2 {
+    color: #5C4033;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+    border-bottom: 3px solid #8B4513;
+    padding-bottom: 10px;
+}
+
+.tab-body h3 {
+    color: #6B4423;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    font-size: 1.3em;
+}
+
+.tab-body h4 {
+    color: #6B4423;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+.tab-body p {
+    color: #6B4423;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+/* ========== Form Input Styles ========== */
+.input-group {
+    margin: 20px 0;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #5C4033;
+    font-size: 16px;
+}
+
+.input-group input[type="number"],
+.input-group input[type="text"],
+.input-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #D2B48C;
+    border-radius: 6px;
+    font-size: 15px;
+    font-family: 'Courier New', monospace;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.input-group input[type="number"]:focus,
+.input-group input[type="text"]:focus,
+.input-group textarea:focus {
+    outline: none;
+    border-color: #8B4513;
+    box-shadow: 0 0 8px rgba(139, 69, 19, 0.3);
+}
+
+.input-group textarea {
+    resize: vertical;
+    min-height: 100px;
+    font-family: 'Courier New', monospace;
+    line-height: 1.6;
+}
+
+.input-group small {
+    display: block;
+    margin-top: 5px;
+    color: #6B4423;
+    font-size: 13px;
+    font-style: italic;
+}
+
+/* ========== Radio Group Styles ========== */
+.radio-group {
+    margin: 20px 0;
+    padding: 20px;
+    background: #F5E6D3;
+    border-radius: 8px;
+    border: 2px solid #D2B48C;
+}
+
+.radio-group label {
+    display: block;
+    margin: 12px 0;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    color: #5C4033;
+    font-weight: 500;
+}
+
+.radio-group label:hover {
+    background: rgba(139, 69, 19, 0.1);
+}
+
+.radio-group input[type="radio"] {
+    margin-right: 10px;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    accent-color: #8B4513;
+}
+
+/* ========== Service Container Styles ========== */
+.service-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    margin: 25px 0;
+}
+
+.service-box {
+    background: #F5E6D3;
+    padding: 20px;
+    border-radius: 10px;
+    border: 2px solid #D2B48C;
+    box-shadow: 0 2px 6px rgba(139, 69, 19, 0.15);
+}
+
+.service-box h3 {
+    color: #5C4033;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.4em;
+    text-align: center;
+    border-bottom: 2px solid #8B4513;
+    padding-bottom: 10px;
+}
+
+.service-box p {
+    color: #6B4423;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.service-box textarea {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+    .service-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ========== Results Table Styles ========== */
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background: white;
+    font-size: 14px;
+}
+
+.results-table thead {
+    background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.results-table th {
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: bold;
+    border: 1px solid #6B3410;
+    white-space: nowrap;
+}
+
+.results-table td {
+    padding: 10px 8px;
+    border: 1px solid #D2B48C;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+}
+
+.results-table tbody tr:nth-child(even) {
+    background: #F5E6D3;
+}
+
+.results-table tbody tr:hover {
+    background: #E6D5C3;
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+.scrollable {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+.scrollable::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.scrollable::-webkit-scrollbar-track {
+    background: #F5E6D3;
+    border-radius: 6px;
+}
+
+.scrollable::-webkit-scrollbar-thumb {
+    background: #8B4513;
+    border-radius: 6px;
+}
+
+.scrollable::-webkit-scrollbar-thumb:hover {
+    background: #6B3410;
+}
+
+/* ========== Alert Styles ========== */
+.alert {
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+    border-left: 5px solid #8B4513;
+    background: #F5E6D3;
+    color: #5C4033;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.alert strong {
+    color: #5C4033;
+    font-weight: bold;
+}
+
+.alert.hidden {
+    display: none;
+}
+
+/* ========== Button Variants ========== */
+.btn-primary {
+    background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+    color: white;
+    font-weight: bold;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(139, 69, 19, 0.3);
+    margin: 10px 5px;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #6B3410 0%, #8B4513 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(139, 69, 19, 0.4);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #A0522D 0%, #CD853F 100%);
+    color: white;
+    font-weight: bold;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(139, 69, 19, 0.3);
+    margin: 10px 5px;
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(139, 69, 19, 0.4);
+}
+
+.back-btn {
+    width: auto;
+    padding: 12px 25px;
+    margin-bottom: 20px;
+    font-size: 16px;
+    text-transform: none;
+    letter-spacing: 0;
+    display: inline-block;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 25px;
+}
+
+.button-group .btn {
+    flex: 0 1 auto;
+    min-width: 150px;
+}
+
+/* ========== Container Adjustments ========== */
+.container {
+    max-width: 1200px !important;
+    width: 95% !important;
+    text-align: left !important;
+}
+
+/* ========== Responsive Design ========== */
+@media (max-width: 768px) {
+    .tabs-nav {
+        flex-direction: column;
+    }
+    
+    .tab-btn {
+        width: 100%;
+        border-radius: 8px;
+        margin-bottom: 5px;
+    }
+    
+    .tab-btn.active {
+        bottom: 0;
+    }
+    
+    .tab-body {
+        padding: 20px 15px;
+    }
+    
+    .results-table {
+        font-size: 12px;
+    }
+    
+    .results-table th,
+    .results-table td {
+        padding: 8px 4px;
+    }
+    
+    .button-group {
+        flex-direction: column;
+    }
+    
+    .button-group .btn {
+        width: 100%;
+    }
+}
+

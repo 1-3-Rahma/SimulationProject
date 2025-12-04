@@ -67,6 +67,15 @@ function chooseSub(choice) {
     selectedOptions.subOption = choice;
     summarySection.classList.add("hidden");
 
+    // For multi-customers, go directly to the page without showing random options
+    if (choice === "multi-customers") {
+        // Store selections in sessionStorage
+        sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
+        // Navigate directly to multiLimitedCustomer page
+        window.location.href = "multiple/multiLimitedCustomer.html";
+        return;
+    }
+
     randomDiv.classList.remove("hidden");
 
     if (choice === "multi-service") {
