@@ -324,8 +324,8 @@ function buildArrivalTable() {
             const interval = `${String(row.low).padStart(2, '0')}-${String(row.high).padStart(2, '0')}`;
             tr.innerHTML = `
                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteArrivalRow(this)" title="Delete row">🗑️</button></td>
-                <td><input type="number" class="table-input" step="0.1" value="${row.time}" onchange="calculateArrivalTable()"></td>
-                <td><input type="number" class="table-input" step="0.01" value="${row.prob.toFixed(2)}" onchange="calculateArrivalTable()"></td>
+                <td><input type="number" class="table-input" step="0.1" min="0" value="${row.time}" onchange="calculateArrivalTable()"></td>
+                <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="${row.prob.toFixed(2)}" onchange="calculateArrivalTable()"></td>
                 <td class="calculated-cell">${row.cum.toFixed(5)}</td>
                 <td class="calculated-cell">${interval}</td>
             `;
@@ -409,8 +409,8 @@ function addServiceRow(serverId) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, ${serverId})" title="Delete row">🗑️</button></td>
-        <td><input type="number" class="table-input" step="0.1" value="" placeholder="Time" onchange="calculateServiceTable(${serverId})" onblur="if(this.value !== '') calculateServiceTable(${serverId})"></td>
-        <td><input type="number" class="table-input" step="0.01" value="" placeholder="Prob" onchange="calculateServiceTable(${serverId})" onblur="if(this.value !== '') calculateServiceTable(${serverId})"></td>
+        <td><input type="number" class="table-input" step="0.1" min="0" value="" placeholder="Time" onchange="calculateServiceTable(${serverId})" onblur="if(this.value !== '') calculateServiceTable(${serverId})"></td>
+        <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="" placeholder="Prob" onchange="calculateServiceTable(${serverId})" onblur="if(this.value !== '') calculateServiceTable(${serverId})"></td>
         <td class="calculated-cell">--</td>
         <td class="calculated-cell">--</td>
     `;
@@ -433,8 +433,9 @@ function deleteServiceRow(btn, serverId) {
 function updateSpeedDetection() {
     if (!s1Table || !s2Table) return;
     
-    const dist1 = readDistributionFromTable('tbodyS1');
-    const dist2 = readDistributionFromTable('tbodyS2');
+    // Use the calculated tables (which have normalized probabilities) instead of reading from DOM
+    const dist1 = s1Table.map(r => [r.time, r.prob]);
+    const dist2 = s2Table.map(r => [r.time, r.prob]);
     
     if (dist1.length === 0 || dist2.length === 0) return;
     
@@ -469,8 +470,8 @@ function buildServiceTables() {
                 const interval = `${String(row.low).padStart(2, '0')}-${String(row.high).padStart(2, '0')}`;
                 tr.innerHTML = `
                     <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, 1)" title="Delete row">🗑️</button></td>
-                    <td><input type="number" class="table-input" step="0.1" value="${row.time}" onchange="calculateServiceTable(1)"></td>
-                    <td><input type="number" class="table-input" step="0.01" value="${row.prob.toFixed(2)}" onchange="calculateServiceTable(1)"></td>
+                    <td><input type="number" class="table-input" step="0.1" min="0" value="${row.time}" onchange="calculateServiceTable(1)"></td>
+                    <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="${row.prob.toFixed(2)}" onchange="calculateServiceTable(1)"></td>
                     <td class="calculated-cell">${row.cum.toFixed(5)}</td>
                     <td class="calculated-cell">${interval}</td>
                 `;
@@ -492,8 +493,8 @@ function buildServiceTables() {
                 const interval = `${String(row.low).padStart(2, '0')}-${String(row.high).padStart(2, '0')}`;
                 tr.innerHTML = `
                     <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, 2)" title="Delete row">🗑️</button></td>
-                    <td><input type="number" class="table-input" step="0.1" value="${row.time}" onchange="calculateServiceTable(2)"></td>
-                    <td><input type="number" class="table-input" step="0.01" value="${row.prob.toFixed(2)}" onchange="calculateServiceTable(2)"></td>
+                    <td><input type="number" class="table-input" step="0.1" min="0" value="${row.time}" onchange="calculateServiceTable(2)"></td>
+                    <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="${row.prob.toFixed(2)}" onchange="calculateServiceTable(2)"></td>
                     <td class="calculated-cell">${row.cum.toFixed(5)}</td>
                     <td class="calculated-cell">${interval}</td>
                 `;
@@ -555,6 +556,39 @@ function deleteRandomNumberRow(btn, type) {
         return;
     }
     btn.closest('tr').remove();
+    updateRandomNumberCounts();
+}
+
+function generateRandomNumberRows(type) {
+    const inputId = type === 'arrival' ? 'randomArrivalRowCount' : 'randomServiceRowCount';
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    const count = parseInt(input.value) || 5;
+    if (count < 1 || count > 100) {
+        alert('Please enter a number between 1 and 100.');
+        return;
+    }
+    
+    const tbodyId = type === 'arrival' ? 'tbodyRnArr' : 'tbodyRnServ';
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+    
+    for (let i = 0; i < count; i++) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, '${type}')" title="Delete row">🗑️</button></td>
+            <td><input type="number" class="table-input" min="1" max="100" value="" placeholder="1-100" onchange="updateRandomNumberCounts()"></td>
+        `;
+        tbody.appendChild(tr);
+    }
+    
+    // Focus on first input of the last added row
+    const lastRow = tbody.lastElementChild;
+    if (lastRow) {
+        lastRow.querySelector('td:nth-child(2) input').focus();
+    }
+    
     updateRandomNumberCounts();
 }
 
