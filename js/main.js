@@ -26,7 +26,12 @@ function selectOption(type) {
     }
 
     if (type === "single") {
-        window.location.href = "single/singleOptions.html";
+        sub.classList.remove("hidden");
+        sub.innerHTML = `
+            <h3>Single Server Options</h3>
+            <button class="btn small" onclick="chooseSub('single-customers')">Limited by Customer Number</button>
+            <button class="btn small" onclick="chooseSub('single-time')">Limited by Service Time</button>
+        `;
         return;
     }
 
@@ -51,7 +56,20 @@ function chooseSub(choice) {
     selectedOptions.subOption = choice;
     if (summarySection) summarySection.classList.add("hidden");
 
-    // Case: Limited by Customer → direct navigation
+    // Single Server Cases
+    if (choice === "single-customers") {
+        sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
+        window.location.href = "single/singleLimitedCustomer.html";
+        return;
+    }
+
+    if (choice === "single-time") {
+        sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
+        window.location.href = "single/singleLimitedService.html";
+        return;
+    }
+
+    // Multiple Server Cases
     if (choice === "multi-customers") {
         sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
         window.location.href = "multiple/multiLimitedCustomer.html";
@@ -79,8 +97,17 @@ function updateSummary() {
 
     let summary = "";
 
+    if (selectedOptions.mainType === "single")
+        summary += "• <strong>Server Type:</strong> Single Server<br>";
+
     if (selectedOptions.mainType === "multiple")
         summary += "• <strong>Server Type:</strong> Multiple Server (2 Servers)<br>";
+
+    if (selectedOptions.subOption === "single-customers")
+        summary += "• <strong>Limitation:</strong> Limited by Customer Number<br>";
+
+    if (selectedOptions.subOption === "single-time")
+        summary += "• <strong>Limitation:</strong> Limited by Service Time<br>";
 
     if (selectedOptions.subOption === "multi-customers")
         summary += "• <strong>Limitation:</strong> Limited by Customer Number<br>";

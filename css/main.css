@@ -138,3 +138,13 @@ h3 {
     transform: translateY(-4px);
     box-shadow: 0 8px 16px rgba(139, 69, 19, 0.5);
 }
+
+.back-btn {
+    width: auto;
+    padding: 12px 25px;
+    margin-bottom: 20px;
+    font-size: 16px;
+    text-transform: none;
+    letter-spacing: 0;
+    display: inline-block;
+}

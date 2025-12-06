@@ -1,501 +1,572 @@
-// Clear all input fields on page load to prevent browser autofill from persisting values
-window.addEventListener('DOMContentLoaded', function() {
-    const inputsToClear = [
-        'numCustomers',
-        'numInterarrivalRows',
-        'numServiceRows',
-        'randomDigitScale',
-        'interarrivalInput',
-        'serviceInput'
-    ];
+// ========== Utilities ==========
+
+function parseDistributionText(text) {
+    const lines = text.split('\n').map(ln => ln.trim()).filter(ln => ln.length > 0);
+    if (lines.length === 0) throw new Error("Distribution cannot be empty.");
     
-    inputsToClear.forEach(id => {
-        const input = document.getElementById(id);
-        if (input) {
-            input.value = '';
-        }
-    });
-});
-
-function parseNumberList(input, expectedLength) {
-    if (!input) return [];
-    const parts = input.split(',').map(x => x.trim()).filter(x => x !== '');
-    const nums = parts.map(x => parseFloat(x)).filter(x => !isNaN(x));
-    if (expectedLength && nums.length !== expectedLength) {
-        // allow one less for interarrival times (first customer can be 0 or omitted)
-        if (!(nums.length === expectedLength - 1)) {
-            return null;
-        }
-    }
-    return nums;
-}
-
-function createDistributionTables() {
-    const numInter = parseInt(document.getElementById('numInterarrivalRows').value, 10);
-    const numService = parseInt(document.getElementById('numServiceRows').value, 10);
-
-    const interSection = document.getElementById('interarrivalDistSection');
-    const serviceSection = document.getElementById('serviceDistSection');
-    const probCalcSection = document.getElementById('probCalcSection');
-    const interContainer = document.getElementById('interarrivalDistTableContainer');
-    const serviceContainer = document.getElementById('serviceDistTableContainer');
-
-    if (isNaN(numInter) || numInter <= 0 || isNaN(numService) || numService <= 0) {
-        alert('Please enter valid positive numbers for the number of rows.');
-        return;
-    }
-
-    // Build Inter-arrival distribution table (no first row special case - all rows are for distribution)
-    let interHtml = '<table style="width:100%; border-collapse:collapse; font-size:14px;">';
-    interHtml += '<thead><tr style="background:#F5E6D3;">';
-    interHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Row</th>';
-    interHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Inter-arrival Time (minutes)</th>';
-    interHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Probability</th>';
-    interHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Cumulative Probability</th>';
-    interHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Random Digit Assignment Range</th>';
-    interHtml += '</tr></thead><tbody>';
-    for (let i = 1; i <= numInter; i++) {
-        interHtml += '<tr' + (i % 2 === 0 ? ' style="background:rgba(245,230,211,0.4);"' : '') + '>';
-        interHtml += '<td style="border:1px solid #D2B48C; padding:6px; text-align:center;">' + i + '</td>';
-        interHtml += '<td style="border:1px solid #D2B48C; padding:6px; text-align:center;">' +
-                     '<input type="number" min="0" step="0.01" ' +
-                     'class="inter-time-input" data-row="' + i + '" ' +
-                     'style="width:80px; padding:4px;" ' +
-                     'oninput="if (this.value < 0) this.value = 0;" />' +
-                     '</td>';
-        interHtml += '<td style="border:1px solid #D2B48C; padding:6px; text-align:center;">' +
-                     '<input type="number" min="0" max="1" step="0.01" ' +
-                     'class="inter-prob-input" data-row="' + i + '" ' +
-                     'style="width:80px; padding:4px;" ' +
-                     'oninput="if (this.value < 0) this.value = 0; if (this.value > 1) this.value = 1;" />' +
-                     '</td>';
-        interHtml += '<td class="inter-cum-cell" data-row="' + i + '" style="border:1px solid #D2B48C; padding:6px; text-align:center;"></td>';
-        interHtml += '<td class="inter-range-cell" data-row="' + i + '" style="border:1px solid #D2B48C; padding:6px; text-align:center;"></td>';
-        interHtml += '</tr>';
-    }
-    interHtml += '</tbody></table>';
-    interContainer.innerHTML = interHtml;
-    interSection.style.display = 'block';
-
-    // Build Service distribution table
-    let serviceHtml = '<table style="width:100%; border-collapse:collapse; font-size:14px;">';
-    serviceHtml += '<thead><tr style="background:#F5E6D3;">';
-    serviceHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Row</th>';
-    serviceHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Service Time (minutes)</th>';
-    serviceHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Probability</th>';
-    serviceHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Cumulative Probability</th>';
-    serviceHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Random Digit Assignment Range</th>';
-    serviceHtml += '</tr></thead><tbody>';
-    for (let i = 1; i <= numService; i++) {
-        serviceHtml += '<tr' + (i % 2 === 0 ? ' style="background:rgba(245,230,211,0.4);"' : '') + '>';
-        serviceHtml += '<td style="border:1px solid #D2B48C; padding:6px; text-align:center;">' + i + '</td>';
-        serviceHtml += '<td style="border:1px solid #D2B48C; padding:6px; text-align:center;">' +
-                       '<input type="number" min="0" step="0.01" ' +
-                       'class="service-time-input" data-row="' + i + '" ' +
-                       'style="width:80px; padding:4px;" ' +
-                       'oninput="if (this.value < 0) this.value = 0;" />' +
-                       '</td>';
-        serviceHtml += '<td style="border:1px solid #D2B48C; padding:6px; text-align:center;">' +
-                       '<input type="number" min="0" max="1" step="0.01" ' +
-                       'class="service-prob-input" data-row="' + i + '" ' +
-                       'style="width:80px; padding:4px;" ' +
-                       'oninput="if (this.value < 0) this.value = 0; if (this.value > 1) this.value = 1;" />' +
-                       '</td>';
-        serviceHtml += '<td class="service-cum-cell" data-row="' + i + '" style="border:1px solid #D2B48C; padding:6px; text-align:center;"></td>';
-        serviceHtml += '<td class="service-range-cell" data-row="' + i + '" style="border:1px solid #D2B48C; padding:6px; text-align:center;"></td>';
-        serviceHtml += '</tr>';
-    }
-    serviceHtml += '</tbody></table>';
-    serviceContainer.innerHTML = serviceHtml;
-    serviceSection.style.display = 'block';
-
-    // Show probability calculation section once tables exist
-    probCalcSection.style.display = 'block';
-}
-
-function calculateDistributions() {
-    // Get the scale from user input
-    const scaleInput = document.getElementById('randomDigitScale');
-    const scale = scaleInput ? parseInt(scaleInput.value, 10) : 100;
-    if (isNaN(scale) || scale < 10) {
-        alert('Please enter a valid random digit scale (minimum 10).');
-        return;
-    }
-
-    // Determine number of digits for padding
-    const numDigits = Math.ceil(Math.log10(scale));
-    
-    // Helper to format range: ranges start from 01 (or 001, 0001, etc.), and 00 (or 000, 0000, etc.) represents the max
-    function formatRange(low, high, maxVal) {
-        const l = Math.max(1, low); // Start from 01 (which is 1)
-        const h = Math.max(l, Math.min(maxVal, high));
-        const pad = n => n.toString().padStart(numDigits, '0');
-        if (h < l) return '';
-        // If high equals max, display as all zeros
-        const highDisplay = h === maxVal ? 0 : h;
-        return pad(l) + '-' + pad(highDisplay);
-    }
-
-    // Inter-arrival distribution table
-    const interTable = document.querySelector('#interarrivalDistTableContainer table tbody');
-    let interFinalCum = 0;
-    if (interTable) {
-        let cum = 0;
-        const rows = interTable.querySelectorAll('tr');
-        rows.forEach((row) => {
-            const probInput = row.querySelector('.inter-prob-input');
-            const cumCell = row.querySelector('.inter-cum-cell');
-            const rangeCell = row.querySelector('.inter-range-cell');
-
-            if (!probInput || !cumCell || !rangeCell) {
-                return;
-            }
-
-            let p = parseFloat(probInput.value);
-            if (isNaN(p) || p < 0) {
-                p = 0;
-            } else if (p > 1) {
-                p = 1;
-            }
-            probInput.value = p.toFixed(2);
-
-            const prevCum = cum;
-            cum += p;
-            cumCell.textContent = cum.toFixed(2);
-
-            // Calculate range: ranges start from 01 (or 001, etc.), and 00 (or 000, etc.) represents the max
-            // First interval starts at 1, subsequent intervals start at prevCum*scale+1
-            const low = prevCum === 0 ? 1 : Math.round(prevCum * scale) + 1;
-            const high = Math.round(cum * scale);
-            rangeCell.textContent = formatRange(low, high, scale);
-        });
-        interFinalCum = cum;
-    }
-
-    // Service time distribution table
-    const serviceTable = document.querySelector('#serviceDistTableContainer table tbody');
-    let serviceFinalCum = 0;
-    if (serviceTable) {
-        let cum = 0;
-        const rows = serviceTable.querySelectorAll('tr');
-        rows.forEach(row => {
-            const probInput = row.querySelector('.service-prob-input');
-            const cumCell = row.querySelector('.service-cum-cell');
-            const rangeCell = row.querySelector('.service-range-cell');
-
-            if (!probInput || !cumCell || !rangeCell) {
-                return;
-            }
-
-            let p = parseFloat(probInput.value);
-            if (isNaN(p) || p < 0) {
-                p = 0;
-            } else if (p > 1) {
-                p = 1;
-            }
-            probInput.value = p.toFixed(2);
-
-            const prevCum = cum;
-            cum += p;
-            cumCell.textContent = cum.toFixed(2);
-
-            // Calculate range: ranges start from 01 (or 001, etc.), and 00 (or 000, etc.) represents the max
-            // First interval starts at 1, subsequent intervals start at prevCum*scale+1
-            const low = prevCum === 0 ? 1 : Math.round(prevCum * scale) + 1;
-            const high = Math.round(cum * scale);
-            rangeCell.textContent = formatRange(low, high, scale);
-        });
-        serviceFinalCum = cum;
-    }
-
-    // Validate that cumulative probabilities don't exceed 1.00
-    // Use a small tolerance (0.001) to account for floating point precision issues
-    // Round to 2 decimal places for comparison
-    const interRounded = Math.round(interFinalCum * 100) / 100;
-    if (interRounded > 1.00) {
-        alert('Error: Total cumulative probability for Inter-arrival Time Distribution exceeds 1.00 (' + interFinalCum.toFixed(2) + ').\nPlease adjust the probabilities so they sum to 1.00 or less.');
-        // Clear ranges
-        if (interTable) {
-            const rows = interTable.querySelectorAll('tr');
-            rows.forEach(row => {
-                const rangeCell = row.querySelector('.inter-range-cell');
-                if (rangeCell) {
-                    rangeCell.textContent = '';
-                }
-            });
-        }
-        return;
-    }
-
-    const serviceRounded = Math.round(serviceFinalCum * 100) / 100;
-    if (serviceRounded > 1.00) {
-        alert('Error: Total cumulative probability for Service Time Distribution exceeds 1.00 (' + serviceFinalCum.toFixed(2) + ').\nPlease adjust the probabilities so they sum to 1.00 or less.');
-        // Clear ranges
-        if (serviceTable) {
-            const rows = serviceTable.querySelectorAll('tr');
-            rows.forEach(row => {
-                const rangeCell = row.querySelector('.service-range-cell');
-                if (rangeCell) {
-                    rangeCell.textContent = '';
-                }
-            });
-        }
-        return;
-    }
-
-    // After calculating distributions, create simulation tables
-    createSimulationTables();
-}
-
-function createSimulationTables() {
-    const n = parseInt(document.getElementById('numCustomers').value, 10);
-    if (isNaN(n) || n <= 0) {
-        alert('Please enter a valid number of customers first.');
-        return;
-    }
-
-    const simTablesSection = document.getElementById('simulationTablesSection');
-    const interSimSection = document.getElementById('interarrivalSimSection');
-    const serviceSimSection = document.getElementById('serviceSimSection');
-    const interSimContainer = document.getElementById('interarrivalSimTableContainer');
-    const serviceSimContainer = document.getElementById('serviceSimTableContainer');
-
-    // Inter-arrival simulation table
-    let interSimHtml = '<table style="width:100%; border-collapse:collapse; font-size:14px;">';
-    interSimHtml += '<thead><tr style="background:#F5E6D3;">';
-    interSimHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Customer</th>';
-    interSimHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Random Digits</th>';
-    interSimHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Inter-arrival Time (minutes)</th>';
-    interSimHtml += '</tr></thead><tbody>';
-    for (let i = 1; i <= n; i++) {
-        interSimHtml += '<tr' + (i % 2 === 0 ? ' style="background:rgba(245,230,211,0.4);"' : '') + '>';
-        interSimHtml += '<td style="border:1px solid #D2B48C; padding:6px; text-align:center;">' + i + '</td>';
-        if (i === 1) {
-            // First customer: no inter-arrival time
-            interSimHtml += '<td style="border:1px solid #D2B48C; padding:6px; text-align:center;">&mdash;</td>';
-            interSimHtml += '<td class="inter-sim-time-cell" data-customer="' + i + '" style="border:1px solid #D2B48C; padding:6px; text-align:center;">&mdash;</td>';
-        } else {
-            interSimHtml += '<td style="border:1px solid #D2B48C; padding:6px; text-align:center;">' +
-                            '<input type="number" step="any" ' +
-                            'class="inter-random-input" data-customer="' + i + '" ' +
-                            'style="width:100px; padding:4px;" ' +
-                            'placeholder="Enter value" />' +
-                            '</td>';
-            interSimHtml += '<td class="inter-sim-time-cell" data-customer="' + i + '" style="border:1px solid #D2B48C; padding:6px; text-align:center;"></td>';
-        }
-        interSimHtml += '</tr>';
-    }
-    interSimHtml += '</tbody></table>';
-    interSimContainer.innerHTML = interSimHtml;
-
-    // Service simulation table
-    let serviceSimHtml = '<table style="width:100%; border-collapse:collapse; font-size:14px;">';
-    serviceSimHtml += '<thead><tr style="background:#F5E6D3;">';
-    serviceSimHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Customer</th>';
-    serviceSimHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Random Digits</th>';
-    serviceSimHtml += '<th style="border:1px solid #D2B48C; padding:6px;">Service Time (minutes)</th>';
-    serviceSimHtml += '</tr></thead><tbody>';
-    for (let i = 1; i <= n; i++) {
-        serviceSimHtml += '<tr' + (i % 2 === 0 ? ' style="background:rgba(245,230,211,0.4);"' : '') + '>';
-        serviceSimHtml += '<td style="border:1px solid #D2B48C; padding:6px; text-align:center;">' + i + '</td>';
-        serviceSimHtml += '<td style="border:1px solid #D2B48C; padding:6px; text-align:center;">' +
-                           '<input type="number" step="any" ' +
-                           'class="service-random-input" data-customer="' + i + '" ' +
-                           'style="width:100px; padding:4px;" ' +
-                           'placeholder="Enter value" />' +
-                           '</td>';
-        serviceSimHtml += '<td class="service-sim-time-cell" data-customer="' + i + '" style="border:1px solid #D2B48C; padding:6px; text-align:center;"></td>';
-        serviceSimHtml += '</tr>';
-    }
-    serviceSimHtml += '</tbody></table>';
-    serviceSimContainer.innerHTML = serviceSimHtml;
-
-    simTablesSection.style.display = 'block';
-    interSimSection.style.display = 'block';
-    serviceSimSection.style.display = 'block';
-    document.getElementById('lookupButtonSection').style.display = 'block';
-}
-
-function lookupTimesFromRandomDigits() {
-    const n = parseInt(document.getElementById('numCustomers').value, 10);
-    if (isNaN(n) || n <= 0) {
-        alert('Please enter a valid number of customers.');
-        return;
-    }
-
-    // Get the scale from user input
-    const scaleInput = document.getElementById('randomDigitScale');
-    const scale = scaleInput ? parseInt(scaleInput.value, 10) : 100;
-    if (isNaN(scale) || scale < 10) {
-        alert('Please enter a valid random digit scale.');
-        return;
-    }
-
-    // Helper to parse range like "01-10" or "001-125" or "0001-1250" (where all zeros means max scale)
-    function parseRange(rangeStr, maxScale) {
-        if (!rangeStr || rangeStr === '—' || rangeStr === '') return null;
-        const parts = rangeStr.split('-');
-        if (parts.length !== 2) return null;
-        let low = parseInt(parts[0], 10);
-        let high = parseInt(parts[1], 10);
-        if (isNaN(low) || isNaN(high)) return null;
-        // If high is 0, it means the max scale value
-        if (high === 0) high = maxScale;
-        return { low, high };
-    }
-
-    // Build lookup array for inter-arrival times (store ranges as objects)
-    const interDistTable = document.querySelector('#interarrivalDistTableContainer table tbody');
-    const interLookup = [];
-    if (interDistTable) {
-        const rows = interDistTable.querySelectorAll('tr');
-        rows.forEach(row => {
-            const timeInput = row.querySelector('.inter-time-input');
-            const rangeCell = row.querySelector('.inter-range-cell');
-            if (timeInput && rangeCell) {
-                const time = parseFloat(timeInput.value);
-                const range = parseRange(rangeCell.textContent.trim(), scale);
-                if (!isNaN(time) && range) {
-                    // Store the range data for lookup
-                    interLookup.push({ time, low: range.low, high: range.high });
-                }
-            }
-        });
-    }
-
-    // Build lookup array for service times (store ranges as objects)
-    const serviceDistTable = document.querySelector('#serviceDistTableContainer table tbody');
-    const serviceLookup = [];
-    if (serviceDistTable) {
-        const rows = serviceDistTable.querySelectorAll('tr');
-        rows.forEach(row => {
-            const timeInput = row.querySelector('.service-time-input');
-            const rangeCell = row.querySelector('.service-range-cell');
-            if (timeInput && rangeCell) {
-                const time = parseFloat(timeInput.value);
-                const range = parseRange(rangeCell.textContent.trim(), scale);
-                if (!isNaN(time) && range) {
-                    // Store the range data for lookup
-                    serviceLookup.push({ time, low: range.low, high: range.high });
-                }
-            }
-        });
-    }
-
-    // Helper to find which range a random digit falls into
-    function findTimeInRanges(randomDigit, lookupArray) {
-        // Convert to number if it's a string
-        const digit = parseFloat(randomDigit);
-        if (isNaN(digit)) return null;
+    const dist = [];
+    for (const ln of lines) {
+        const parts = ln.split(',').map(p => p.trim());
+        if (parts.length !== 2) throw new Error(`Each line must be 'time,prob' -> '${ln}'`);
         
-        // Check all ranges to see which one contains this digit
-        for (const rangeData of lookupArray) {
-            if (digit >= rangeData.low && digit <= rangeData.high) {
-                return rangeData.time;
-            }
-        }
-        return null;
+        let t = parseFloat(parts[0]);
+        if (isNaN(t)) throw new Error(`Invalid time value: '${parts[0]}' in line '${ln}'`);
+        
+        let p = parseFloat(parts[1]);
+        if (isNaN(p)) throw new Error(`Invalid probability value: '${parts[1]}' in line '${ln}'`);
+        if (p < 0 || p > 1) throw new Error(`Probability must be between 0 and 1 in line '${ln}'`);
+        
+        dist.push([t, p]);
     }
-
-    // Lookup inter-arrival times
-    for (let i = 2; i <= n; i++) {
-        const randomInput = document.querySelector('.inter-random-input[data-customer="' + i + '"]');
-        const timeCell = document.querySelector('.inter-sim-time-cell[data-customer="' + i + '"]');
-        if (randomInput && timeCell) {
-            const randomDigit = randomInput.value.trim();
-            if (randomDigit !== '') {
-                const time = findTimeInRanges(randomDigit, interLookup);
-                if (time !== null) {
-                    timeCell.textContent = time.toString();
-                    timeCell.style.color = '';
-                } else {
-                    timeCell.textContent = '?';
-                    timeCell.style.color = '#c62828';
-                }
-            } else {
-                timeCell.textContent = '';
-                timeCell.style.color = '';
-            }
-        }
+    
+    const total = dist.reduce((sum, [_, p]) => sum + p, 0);
+    if (Math.abs(total - 1.0) > 1e-6) {
+        throw new Error(`Probabilities must sum to 1.0 (current sum = ${total.toFixed(6)})`);
     }
-
-    // Lookup service times
-    for (let i = 1; i <= n; i++) {
-        const randomInput = document.querySelector('.service-random-input[data-customer="' + i + '"]');
-        const timeCell = document.querySelector('.service-sim-time-cell[data-customer="' + i + '"]');
-        if (randomInput && timeCell) {
-            const randomDigit = randomInput.value.trim();
-            if (randomDigit !== '') {
-                const time = findTimeInRanges(randomDigit, serviceLookup);
-                if (time !== null) {
-                    timeCell.textContent = time.toString();
-                    timeCell.style.color = '';
-                } else {
-                    timeCell.textContent = '?';
-                    timeCell.style.color = '#c62828';
-                }
-            } else {
-                timeCell.textContent = '';
-                timeCell.style.color = '';
-            }
-        }
-    }
-
-    // Show run simulation section
-    document.getElementById('runSimSection').style.display = 'block';
+    
+    return dist;
 }
 
-function runSimulationFromTables() {
-    const n = parseInt(document.getElementById('numCustomers').value, 10);
-    if (isNaN(n) || n <= 0) {
-        alert('Please enter a valid number of customers.');
+// Helper function to determine scale from probability decimal places
+function determineScaleFromProbabilities(dist) {
+    let maxDecimalPlaces = 0;
+    
+    for (const [_, prob] of dist) {
+        // Convert probability to string to count decimal places
+        const probStr = prob.toString();
+        if (probStr.includes('.')) {
+            const decimalPart = probStr.split('.')[1];
+            if (decimalPart) {
+                maxDecimalPlaces = Math.max(maxDecimalPlaces, decimalPart.length);
+            }
+        }
+    }
+    
+    // Determine scale: 2 decimal places = 100, 3 = 1000, 4 = 10000, etc.
+    // If no decimals or 1 decimal, use 100. If 2 decimals, use 1000, etc.
+    if (maxDecimalPlaces <= 2) {
+        return 100;  // 0.1, 0.12 → 100 scale
+    } else {
+        return Math.pow(10, maxDecimalPlaces);  // 0.125 → 1000, 0.1250 → 10000
+    }
+}
+
+function buildCumulativeIntervals(dist, scale = 100) {
+    const table = [];
+    let cum = 0.0;
+    let prevUpper = 0;
+    const n = dist.length;
+    
+    for (let i = 0; i < n; i++) {
+        const [time, prob] = dist[i];
+        cum += prob;
+        let upper = Math.round(cum * scale);
+        if (upper <= prevUpper) upper = prevUpper + 1;
+        if (i === n - 1) upper = scale;
+        
+        const low = prevUpper + 1;
+        table.push({
+            time: time,
+            prob: prob,
+            cum: parseFloat(cum.toFixed(5)),
+            low: low,
+            high: upper
+        });
+        prevUpper = upper;
+    }
+    
+    return table;
+}
+
+function mapRandomToTime(rn, table) {
+    // Convert rn to number and handle 0 as max scale value
+    let digit = parseFloat(rn);
+    if (isNaN(digit)) throw new Error("Invalid random number.");
+    
+    // Find the max scale from the table (last row's high value)
+    const maxScale = table.length > 0 ? table[table.length - 1].high : 100;
+    
+    // If digit is 0, treat it as max scale (since 00 represents max in display)
+    if (digit === 0) digit = maxScale;
+    
+    // Check if digit is within valid range
+    if (digit < 1 || digit > maxScale) {
+        throw new Error(`Random numbers must be in the range 1..${maxScale}.`);
+    }
+    
+    for (const row of table) {
+        if (digit >= row.low && digit <= row.high) return row.time;
+    }
+    return table[table.length - 1].time;
+}
+
+// ========== Global State ==========
+
+let arrivalTable = null;
+let serviceTable = null;
+let currentTab = 0;
+
+// ========== Tab Management ==========
+
+function switchTab(tabIdx) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    
+    document.getElementById(`tab${tabIdx}`).classList.add('active');
+    document.querySelectorAll('.tab-btn')[tabIdx].classList.add('active');
+    currentTab = tabIdx;
+    
+    // Scroll to top of the page when switching tabs, especially for step 5
+    setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
+}
+
+function nextTab(tabIdx) {
+    switchTab(tabIdx);
+}
+
+function prevTab(tabIdx) {
+    switchTab(tabIdx);
+}
+
+// ========== Table Building ==========
+
+function readDistributionFromTable(tbodyId) {
+    const tbody = document.getElementById(tbodyId);
+    const rows = tbody.querySelectorAll('tr');
+    const dist = [];
+    
+    for (const row of rows) {
+        // Account for action cell in first column, so inputs are in 2nd and 3rd columns
+        const timeInput = row.querySelector('td:nth-child(2) input');
+        const probInput = row.querySelector('td:nth-child(3) input');
+        
+        if (!timeInput || !probInput) continue;
+        
+        const time = parseFloat(timeInput.value);
+        const prob = parseFloat(probInput.value);
+        
+        // Skip empty or invalid rows (allow 0 values but skip NaN)
+        if (isNaN(time) || isNaN(prob)) continue;
+        if (prob < 0 || prob > 1) continue;
+        
+        // Only add if at least one value is non-zero (to allow partial input)
+        if (time !== 0 || prob !== 0) {
+            dist.push([time, prob]);
+        }
+    }
+    
+    return dist;
+}
+
+function calculateArrivalTable() {
+    try {
+        const dist = readDistributionFromTable('tbodyArrival');
+        if (dist.length === 0) {
+            // Don't show alert if table is empty or just has default/empty rows
+            const tbody = document.getElementById('tbodyArrival');
+            const rows = tbody.querySelectorAll('tr');
+            const hasAnyInput = Array.from(rows).some(row => {
+                const timeInput = row.querySelector('td:nth-child(2) input');
+                const probInput = row.querySelector('td:nth-child(3) input');
+                if (!timeInput || !probInput) return false;
+                const time = parseFloat(timeInput.value);
+                const prob = parseFloat(probInput.value);
+                return !isNaN(time) && !isNaN(prob) && (time !== 0 || prob !== 0);
+            });
+            
+            if (!hasAnyInput) {
+                // Silently return if no valid input yet (user is still typing)
+                return;
+            }
+
+            // Only show alert if there are rows but none are valid
+            const hasRows = rows.length > 0;
+            if (hasRows) {
+                alert('Please enter at least one row with valid Time and Probability values.');
+            }
+                return;
+            }
+
+        const total = dist.reduce((sum, [_, p]) => sum + p, 0);
+        
+        // Automatically determine scale from probability decimal places
+        const scale = determineScaleFromProbabilities(dist);
+        const numDigits = Math.ceil(Math.log10(scale));
+        
+        const table = buildCumulativeIntervals(dist, scale);
+        arrivalTable = table;
+        
+        const tbody = document.getElementById('tbodyArrival');
+        const rows = tbody.querySelectorAll('tr');
+        
+        rows.forEach((row, idx) => {
+            if (idx < table.length) {
+                const cumCell = row.querySelector('td:nth-child(4)');
+                const intervalCell = row.querySelector('td:nth-child(5)');
+                // Format interval with appropriate number of digits
+                const highDisplay = table[idx].high === scale ? 0 : table[idx].high;
+                const interval = `${String(table[idx].low).padStart(numDigits, '0')}-${String(highDisplay).padStart(numDigits, '0')}`;
+                
+                if (cumCell) cumCell.textContent = table[idx].cum.toFixed(5);
+                if (intervalCell) intervalCell.textContent = interval;
+            }
+        });
+    } catch (err) {
+        alert(`Calculation error: ${err.message}`);
+    }
+}
+
+function addArrivalRow() {
+    const tbody = document.getElementById('tbodyArrival');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td class="action-cell"><button class="btn-delete-row" onclick="deleteArrivalRow(this)" title="Delete row">🗑️</button></td>
+        <td><input type="number" class="table-input" step="0.1" value="" placeholder="Time" onchange="calculateArrivalTable()" onblur="if(this.value !== '') calculateArrivalTable()"></td>
+        <td><input type="number" class="table-input" step="0.01" value="" placeholder="Prob" onchange="calculateArrivalTable()" onblur="if(this.value !== '') calculateArrivalTable()"></td>
+        <td class="calculated-cell">--</td>
+        <td class="calculated-cell">--</td>
+    `;
+    tbody.appendChild(tr);
+    // Focus on the first input of the new row
+    tr.querySelector('td:nth-child(2) input').focus();
+}
+
+function deleteArrivalRow(btn) {
+    const tbody = document.getElementById('tbodyArrival');
+    if (tbody.querySelectorAll('tr').length <= 1) {
+        alert('At least one row is required.');
+        return;
+    }
+    btn.closest('tr').remove();
+    calculateArrivalTable();
+}
+
+function generateArrivalRows() {
+    const input = document.getElementById('arrivalRowCount');
+    if (!input) return;
+    
+    const count = parseInt(input.value) || 3;
+    if (count < 1 || count > 50) {
+        alert('Please enter a number between 1 and 50.');
+        return;
+    }
+    
+    const tbody = document.getElementById('tbodyArrival');
+    if (!tbody) return;
+    
+    for (let i = 0; i < count; i++) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="action-cell"><button class="btn-delete-row" onclick="deleteArrivalRow(this)" title="Delete row">🗑️</button></td>
+            <td><input type="number" class="table-input" step="0.1" min="0" value="" placeholder="Time" onchange="calculateArrivalTable()" onblur="if(this.value !== '') calculateArrivalTable()"></td>
+            <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="" placeholder="Prob" onchange="calculateArrivalTable()" onblur="if(this.value !== '') calculateArrivalTable()"></td>
+            <td class="calculated-cell">--</td>
+            <td class="calculated-cell">--</td>
+        `;
+        tbody.appendChild(tr);
+    }
+    
+    // Focus on first input of the last added row
+    const lastRow = tbody.lastElementChild;
+    if (lastRow) {
+        lastRow.querySelector('td:nth-child(2) input').focus();
+    }
+    
+    calculateArrivalTable();
+}
+
+function calculateServiceTable() {
+    try {
+        const dist = readDistributionFromTable('tbodyService');
+        
+        if (dist.length === 0) {
+            // Don't show alert if table is empty or just has default/empty rows
+            const tbody = document.getElementById('tbodyService');
+            const rows = tbody.querySelectorAll('tr');
+            const hasAnyInput = Array.from(rows).some(row => {
+                const timeInput = row.querySelector('td:nth-child(2) input');
+                const probInput = row.querySelector('td:nth-child(3) input');
+                if (!timeInput || !probInput) return false;
+                const time = parseFloat(timeInput.value);
+                const prob = parseFloat(probInput.value);
+                return !isNaN(time) && !isNaN(prob) && (time !== 0 || prob !== 0);
+            });
+            
+            if (!hasAnyInput) {
+                // Silently return if no valid input yet (user is still typing)
+                return;
+            }
+            
+            // Only show alert if there are rows but none are valid
+            const hasRows = rows.length > 0;
+            if (hasRows) {
+                alert('Please enter at least one row with valid Time and Probability values.');
+        }
         return;
     }
 
-    // Extract inter-arrival times from simulation table
-    const interarrivalTimes = [0]; // First customer has 0
-    for (let i = 2; i <= n; i++) {
-        const timeCell = document.querySelector('.inter-sim-time-cell[data-customer="' + i + '"]');
-        if (timeCell) {
-            const time = parseFloat(timeCell.textContent);
-            if (!isNaN(time) && time >= 0) {
-                interarrivalTimes.push(time);
-            } else {
-                alert('Please lookup inter-arrival times first. Customer ' + i + ' is missing.');
-                return;
+        const total = dist.reduce((sum, [_, p]) => sum + p, 0);
+        
+        // Automatically determine scale from probability decimal places
+        const scale = determineScaleFromProbabilities(dist);
+        const numDigits = Math.ceil(Math.log10(scale));
+        
+        const table = buildCumulativeIntervals(dist, scale);
+        serviceTable = table;
+        
+        const tbody = document.getElementById('tbodyService');
+        const rows = tbody.querySelectorAll('tr');
+        
+        rows.forEach((row, idx) => {
+            if (idx < table.length) {
+                const cumCell = row.querySelector('td:nth-child(4)');
+                const intervalCell = row.querySelector('td:nth-child(5)');
+                // Format interval with appropriate number of digits
+                const highDisplay = table[idx].high === scale ? 0 : table[idx].high;
+                const interval = `${String(table[idx].low).padStart(numDigits, '0')}-${String(highDisplay).padStart(numDigits, '0')}`;
+                
+                if (cumCell) cumCell.textContent = table[idx].cum.toFixed(5);
+                if (intervalCell) intervalCell.textContent = interval;
             }
-        } else {
-            interarrivalTimes.push(0);
+        });
+    } catch (err) {
+        alert(`Calculation error: ${err.message}`);
+    }
+}
+
+function addServiceRow() {
+    const tbody = document.getElementById('tbodyService');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this)" title="Delete row">🗑️</button></td>
+        <td><input type="number" class="table-input" step="0.1" min="0" value="" placeholder="Time" onchange="calculateServiceTable()" onblur="if(this.value !== '') calculateServiceTable()"></td>
+        <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="" placeholder="Prob" onchange="calculateServiceTable()" onblur="if(this.value !== '') calculateServiceTable()"></td>
+        <td class="calculated-cell">--</td>
+        <td class="calculated-cell">--</td>
+    `;
+    tbody.appendChild(tr);
+    // Focus on the first input of the new row
+    tr.querySelector('td:nth-child(2) input').focus();
+}
+
+function deleteServiceRow(btn) {
+    const tbody = document.getElementById('tbodyService');
+    if (tbody.querySelectorAll('tr').length <= 1) {
+        alert('At least one row is required.');
+        return;
+    }
+    btn.closest('tr').remove();
+    calculateServiceTable();
+}
+
+function generateServiceRows() {
+    const input = document.getElementById('serviceRowCount');
+    if (!input) return;
+    
+    const count = parseInt(input.value) || 3;
+    if (count < 1 || count > 50) {
+        alert('Please enter a number between 1 and 50.');
+        return;
+    }
+    
+    const tbody = document.getElementById('tbodyService');
+    if (!tbody) return;
+    
+    for (let i = 0; i < count; i++) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this)" title="Delete row">🗑️</button></td>
+            <td><input type="number" class="table-input" step="0.1" min="0" value="" placeholder="Time" onchange="calculateServiceTable()" onblur="if(this.value !== '') calculateServiceTable()"></td>
+            <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="" placeholder="Prob" onchange="calculateServiceTable()" onblur="if(this.value !== '') calculateServiceTable()"></td>
+            <td class="calculated-cell">--</td>
+            <td class="calculated-cell">--</td>
+        `;
+        tbody.appendChild(tr);
+    }
+    
+    // Focus on first input of the last added row
+    const lastRow = tbody.lastElementChild;
+    if (lastRow) {
+        lastRow.querySelector('td:nth-child(2) input').focus();
+    }
+    
+    calculateServiceTable();
+}
+
+// ========== Random Number Management ==========
+
+function readRandomNumbersFromTable(type) {
+    const tbodyId = type === 'arrival' ? 'tbodyRnArr' : 'tbodyRnServ';
+    const tbody = document.getElementById(tbodyId);
+    const rows = tbody.querySelectorAll('tr');
+    const numbers = [];
+    
+    for (const row of rows) {
+        const input = row.querySelector('td:nth-child(2) input');
+        if (!input) continue;
+        
+        const value = parseInt(input.value);
+        if (!isNaN(value) && value >= 1 && value <= 100) {
+            numbers.push(value);
         }
     }
+    
+    return numbers;
+}
 
-    // Extract service times from simulation table
-    const serviceTimes = [];
-    for (let i = 1; i <= n; i++) {
-        const timeCell = document.querySelector('.service-sim-time-cell[data-customer="' + i + '"]');
-        if (timeCell) {
-            const time = parseFloat(timeCell.textContent);
-            if (!isNaN(time) && time >= 0) {
-                serviceTimes.push(time);
-            } else {
-                alert('Please lookup service times first. Customer ' + i + ' is missing.');
-                return;
-            }
-        } else {
-            alert('Please lookup service times first. Customer ' + i + ' is missing.');
+function addRandomNumberRow(type) {
+    const tbodyId = type === 'arrival' ? 'tbodyRnArr' : 'tbodyRnServ';
+    const tbody = document.getElementById(tbodyId);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, '${type}')" title="Delete row">🗑️</button></td>
+        <td><input type="number" class="table-input" min="1" max="100" value="" placeholder="1-100" onchange="updateRandomNumberCounts()"></td>
+    `;
+    tbody.appendChild(tr);
+    tr.querySelector('td:nth-child(2) input').focus();
+    updateRandomNumberCounts();
+}
+
+function deleteRandomNumberRow(btn, type) {
+    const tbodyId = type === 'arrival' ? 'tbodyRnArr' : 'tbodyRnServ';
+    const tbody = document.getElementById(tbodyId);
+    if (tbody.querySelectorAll('tr').length <= 1) {
+        alert('At least one row is required.');
+        return;
+    }
+    btn.closest('tr').remove();
+    updateRandomNumberCounts();
+}
+
+function generateRandomNumberRows(type) {
+    const inputId = type === 'arrival' ? 'randomArrivalRowCount' : 'randomServiceRowCount';
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    const count = parseInt(input.value) || 5;
+    if (count < 1 || count > 100) {
+        alert('Please enter a number between 1 and 100.');
+        return;
+    }
+
+    const tbodyId = type === 'arrival' ? 'tbodyRnArr' : 'tbodyRnServ';
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+    
+    for (let i = 0; i < count; i++) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, '${type}')" title="Delete row">🗑️</button></td>
+            <td><input type="number" class="table-input" min="1" max="100" value="" placeholder="1-100" onchange="updateRandomNumberCounts()"></td>
+        `;
+        tbody.appendChild(tr);
+    }
+    
+    // Focus on first input of the last added row
+    const lastRow = tbody.lastElementChild;
+    if (lastRow) {
+        lastRow.querySelector('td:nth-child(2) input').focus();
+    }
+    
+    updateRandomNumberCounts();
+}
+
+function updateRandomNumberCounts() {
+    const arrNumbers = readRandomNumbersFromTable('arrival');
+    const servNumbers = readRandomNumbersFromTable('service');
+    
+    const arrivalCountEl = document.getElementById('arrivalCount');
+    const serviceCountEl = document.getElementById('serviceCount');
+    
+    if (arrivalCountEl) arrivalCountEl.textContent = `Count: ${arrNumbers.length} numbers`;
+    if (serviceCountEl) serviceCountEl.textContent = `Count: ${servNumbers.length} numbers`;
+    
+    // Update hidden textareas for backward compatibility
+    const txtRnArr = document.getElementById('txtRnArr');
+    const txtRnServ = document.getElementById('txtRnServ');
+    if (txtRnArr) txtRnArr.value = arrNumbers.join(', ');
+    if (txtRnServ) txtRnServ.value = servNumbers.join(', ');
+}
+
+// ========== Simulation Execution ==========
+
+function runSimulationFromUI() {
+    try {
+        const numCustomers = parseInt(document.getElementById('numCustomers').value);
+        if (numCustomers <= 0 || isNaN(numCustomers)) {
+            alert('Please enter a valid number of customers.');
+            switchTab(0);
             return;
         }
+        
+        // Ensure tables are calculated from inputs
+        if (!arrivalTable) {
+            calculateArrivalTable();
+            if (!arrivalTable) {
+                alert('Please fill in the arrival table in Step 2 first.');
+                switchTab(1);
+                return;
+            }
+        }
+        
+        if (!serviceTable) {
+            calculateServiceTable();
+            if (!serviceTable) {
+                alert('Please fill in the service table in Step 3 first.');
+                switchTab(2);
+                return;
+            }
+        }
+        
+        // Read random numbers from table cells
+        const arrRns = readRandomNumbersFromTable('arrival');
+        const servRns = readRandomNumbersFromTable('service');
+        
+        // Validate random numbers count
+        const requiredArrCount = Math.max(0, numCustomers - 1);
+        if (arrRns.length < requiredArrCount) {
+            alert(`Need at least ${requiredArrCount} arrival random numbers (for customers 2..${numCustomers}). Currently have ${arrRns.length}.`);
+            switchTab(3);
+            return;
+        }
+        
+        if (servRns.length < numCustomers) {
+            alert(`Need at least ${numCustomers} service random numbers (one per customer). Currently have ${servRns.length}.`);
+            switchTab(3);
+        return;
     }
 
-    // Now run the simulation with these times
-    runSimulationWithTimes(n, interarrivalTimes, serviceTimes);
+        // Map random numbers to times
+    const interarrivalTimes = [0]; // First customer has 0
+        for (let i = 0; i < requiredArrCount; i++) {
+            const time = mapRandomToTime(arrRns[i], arrivalTable);
+                interarrivalTimes.push(time);
+        }
+        
+    const serviceTimes = [];
+        for (let i = 0; i < numCustomers; i++) {
+            const time = mapRandomToTime(servRns[i], serviceTable);
+                serviceTimes.push(time);
+        }
+        
+        // Run the simulation
+        runSimulationWithTimes(numCustomers, interarrivalTimes, serviceTimes);
+        switchTab(4);
+    } catch (err) {
+        alert(`Simulation error: ${err.message}`);
+    }
 }
 
 function runSimulationWithTimes(n, interarrivalTimes, serviceTimes) {
-    const tableSection = document.getElementById('tableSection');
-    const resultsSection = document.getElementById('resultsSection');
+    const tbody = document.querySelector('#tableResults tbody');
     const resultsDiv = document.getElementById('queueResults');
-    const tbody = document.querySelector('#simulationTable tbody');
+
+    if (!tbody) {
+        console.error('Results table tbody not found');
+        return;
+    }
 
     tbody.innerHTML = '';
 
@@ -557,26 +628,17 @@ function runSimulationWithTimes(n, interarrivalTimes, serviceTimes) {
         totalIdle += idleTimes[i];
         if (waitingTimes[i] > 0) numWaited++;
 
-        const cells = [
-            i + 1,
-            inter,
-            arrivalTimes[i],
-            serviceTimes[i],
-            serviceBegin[i],
-            serviceEnd[i],
-            waitingTimes[i],
-            timeInSystem[i],
-            idleTimes[i]
-        ];
-
-        cells.forEach(value => {
-            const td = document.createElement('td');
-            td.style.border = '1px solid #D2B48C';
-            td.style.padding = '6px';
-            td.style.textAlign = 'center';
-            td.textContent = typeof value === 'number' ? value.toString() : value;
-            tr.appendChild(td);
-        });
+        tr.innerHTML = `
+            <td>${i + 1}</td>
+            <td>${inter}</td>
+            <td>${arrivalTimes[i]}</td>
+            <td>${serviceTimes[i]}</td>
+            <td>${serviceBegin[i]}</td>
+            <td>${serviceEnd[i]}</td>
+            <td>${waitingTimes[i]}</td>
+            <td>${timeInSystem[i]}</td>
+            <td>${idleTimes[i]}</td>
+        `;
 
         tbody.appendChild(tr);
     }
@@ -584,26 +646,18 @@ function runSimulationWithTimes(n, interarrivalTimes, serviceTimes) {
     // Totals row
     const totalRow = document.createElement('tr');
     totalRow.style.background = '#F5E6D3';
-    const labels = [
-        'Total',
-        totalInterarrival,
-        '',
-        totalService,
-        '',
-        '',
-        totalWaiting,
-        totalTimeInSystem,
-        totalIdle
-    ];
-    labels.forEach((value, idx) => {
-        const td = document.createElement('td');
-        td.style.border = '1px solid #D2B48C';
-        td.style.padding = '6px';
-        td.style.textAlign = idx === 0 ? 'left' : 'center';
-        td.style.fontWeight = 'bold';
-        td.textContent = value === '' ? '' : value.toString();
-        totalRow.appendChild(td);
-    });
+    totalRow.style.fontWeight = 'bold';
+    totalRow.innerHTML = `
+        <td>Total</td>
+        <td>${totalInterarrival}</td>
+        <td></td>
+        <td>${totalService}</td>
+        <td></td>
+        <td></td>
+        <td>${totalWaiting}</td>
+        <td>${totalTimeInSystem}</td>
+        <td>${totalIdle}</td>
+    `;
     tbody.appendChild(totalRow);
 
     // Performance measures, following the PDF logic
@@ -616,81 +670,142 @@ function runSimulationWithTimes(n, interarrivalTimes, serviceTimes) {
     const avgTimeInSystem = totalTimeInSystem / n;
     const avgTimeThoseWhoWait = numWaited > 0 ? totalWaiting / numWaited : 0;
 
-    let html = '';
-    html += `Average waiting time = ${avgWaiting.toFixed(2)} minutes<br>`;
-    html += `Probability (wait) = ${probWait.toFixed(2)}<br>`;
-    html += `Probability of idle server = ${probIdleServer.toFixed(2)}<br>`;
-    html += `Average service time = ${avgServiceTime.toFixed(2)} minutes<br>`;
-    html += `Average time between arrivals = ${avgBetweenArrivals.toFixed(2)} minutes<br>`;
-    html += `Average waiting time of those who wait = ${avgTimeThoseWhoWait.toFixed(2)} minutes<br>`;
-    html += `Average time customer spends in the system = ${avgTimeInSystem.toFixed(2)} minutes`;
+    // Build detailed step-by-step explanations
+    let html = '<div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 2px solid #D2B48C;">';
+    html += '<h3 style="color: #5C4033; margin-top: 0; border-bottom: 2px solid #8B4513; padding-bottom: 10px;">Performance Measures - Calculation Steps</h3>';
+    
+    // 1. Average waiting time
+    html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
+    html += '<h4 style="color: #5C4033; margin-top: 0;">1. Average Waiting Time (minutes)</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Average waiting time = Total waiting time ÷ Total number of customers</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Sum all waiting times from the simulation table = ${totalWaiting.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Total number of customers = ${n}</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Average = ${totalWaiting.toFixed(2)} ÷ ${n} = <strong style="color: #8B4513; font-size: 1.1em;">${avgWaiting.toFixed(2)} minutes</strong></p>`;
+    html += '</div>';
+    
+    // 2. Probability (wait)
+    html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
+    html += '<h4 style="color: #5C4033; margin-top: 0;">2. Probability (Wait)</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Probability (wait) = Number of customers who wait ÷ Total number of customers</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Count customers with waiting time > 0 = ${numWaited} customers</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Total number of customers = ${n}</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Probability = ${numWaited} ÷ ${n} = <strong style="color: #8B4513; font-size: 1.1em;">${probWait.toFixed(2)}</strong></p>`;
+    html += '</div>';
+    
+    // 3. Probability of idle server
+    html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
+    html += '<h4 style="color: #5C4033; margin-top: 0;">3. Probability of Idle Server</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Probability of idle server = Total idle time ÷ Total run time of simulation</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Sum all idle times from the simulation table = ${totalIdle.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Total run time = Time when last service ends = ${totalRunTime.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Probability = ${totalIdle.toFixed(2)} ÷ ${totalRunTime.toFixed(2)} = <strong style="color: #8B4513; font-size: 1.1em;">${probIdleServer.toFixed(2)}</strong></p>`;
+    html += '</div>';
+    
+    // 4. Average service time
+    html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
+    html += '<h4 style="color: #5C4033; margin-top: 0;">4. Average Service Time (minutes)</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Average service time = Total service time ÷ Total number of customers</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Sum all service times from the simulation table = ${totalService.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Total number of customers = ${n}</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Average = ${totalService.toFixed(2)} ÷ ${n} = <strong style="color: #8B4513; font-size: 1.1em;">${avgServiceTime.toFixed(2)} minutes</strong></p>`;
+    html += '</div>';
+    
+    // 5. Average time between arrivals
+    html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
+    html += '<h4 style="color: #5C4033; margin-top: 0;">5. Average Time Between Arrivals (minutes)</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Average time between arrivals = Sum of interarrival times ÷ (Number of arrivals - 1)</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Sum all interarrival times (excluding first customer) = ${totalInterarrival.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Number of arrivals - 1 = ${n} - 1 = ${n - 1}</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Average = ${totalInterarrival.toFixed(2)} ÷ ${n - 1} = <strong style="color: #8B4513; font-size: 1.1em;">${avgBetweenArrivals.toFixed(2)} minutes</strong></p>`;
+    html += '</div>';
+    
+    // 6. Average waiting time of those who wait
+    html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
+    html += '<h4 style="color: #5C4033; margin-top: 0;">6. Average Waiting Time of Those Who Wait (minutes)</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Average waiting time (those who wait) = Total waiting time ÷ Number of customers who wait</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Sum all waiting times = ${totalWaiting.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Number of customers who wait = ${numWaited}</p>`;
+    if (numWaited > 0) {
+        html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Average = ${totalWaiting.toFixed(2)} ÷ ${numWaited} = <strong style="color: #8B4513; font-size: 1.1em;">${avgTimeThoseWhoWait.toFixed(2)} minutes</strong></p>`;
+    } else {
+        html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> No customers waited, so average = <strong style="color: #8B4513; font-size: 1.1em;">0 minutes</strong></p>`;
+    }
+    html += '</div>';
+    
+    // 7. Average time customer spends in the system
+    html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
+    html += '<h4 style="color: #5C4033; margin-top: 0;">7. Average Time Customer Spends in the System (minutes)</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Average time in system = Total time in system ÷ Total number of customers</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Sum all "Time in System" values from the simulation table = ${totalTimeInSystem.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Total number of customers = ${n}</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Average = ${totalTimeInSystem.toFixed(2)} ÷ ${n} = <strong style="color: #8B4513; font-size: 1.1em;">${avgTimeInSystem.toFixed(2)} minutes</strong></p>`;
+    html += '<p style="margin: 5px 0; font-style: italic; color: #666;"><strong>Note:</strong> This can also be calculated as: Average waiting time + Average service time = ' + avgWaiting.toFixed(2) + ' + ' + avgServiceTime.toFixed(2) + ' = ' + avgTimeInSystem.toFixed(2) + ' minutes</p>';
+    html += '</div>';
+    
+    // Summary box
+    html += '<div style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #F5E6D3 0%, #E6D5C3 100%); border-radius: 8px; border: 2px solid #8B4513;">';
+    html += '<h3 style="color: #5C4033; margin-top: 0; text-align: center;">Summary of Results</h3>';
+    html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px;">';
+    html += `<div><strong>Average waiting time:</strong> ${avgWaiting.toFixed(2)} minutes</div>`;
+    html += `<div><strong>Probability (wait):</strong> ${probWait.toFixed(2)}</div>`;
+    html += `<div><strong>Probability of idle server:</strong> ${probIdleServer.toFixed(2)}</div>`;
+    html += `<div><strong>Average service time:</strong> ${avgServiceTime.toFixed(2)} minutes</div>`;
+    html += `<div><strong>Average time between arrivals:</strong> ${avgBetweenArrivals.toFixed(2)} minutes</div>`;
+    html += `<div><strong>Average waiting (those who wait):</strong> ${avgTimeThoseWhoWait.toFixed(2)} minutes</div>`;
+    html += `<div><strong>Average time in system:</strong> ${avgTimeInSystem.toFixed(2)} minutes</div>`;
+    html += '</div>';
+    html += '</div>';
+    
+    html += '</div>';
 
+    if (resultsDiv) {
     resultsDiv.innerHTML = html;
     resultsDiv.className = 'result';
-    resultsDiv.style.background = '#e8f5e9';
-    resultsDiv.style.color = '#2e7d32';
-
-    tableSection.style.display = 'block';
-    resultsSection.style.display = 'block';
+    resultsDiv.style.background = '#f9f9f9';
+    resultsDiv.style.color = '#5C4033';
+        resultsDiv.style.padding = '20px';
+        resultsDiv.style.borderRadius = '8px';
+        resultsDiv.style.marginTop = '20px';
+    }
+    
+    // Scroll to top of the page to show simulation table first (not performance measures)
+    setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
 }
 
-function runSingleLimitedCustomerSimulation() {
-    const n = parseInt(document.getElementById('numCustomers').value, 10);
-    const interarrivalStr = document.getElementById('interarrivalInput').value;
-    const serviceStr = document.getElementById('serviceInput').value;
-
+function clearResults() {
+    const tbody = document.querySelector('#tableResults tbody');
     const resultsDiv = document.getElementById('queueResults');
-
-    if (isNaN(n) || n <= 0) {
-        resultsDiv.textContent = 'Please enter a valid positive number of customers.';
-        resultsDiv.className = 'result';
-        resultsDiv.style.background = '#ffebee';
-        resultsDiv.style.color = '#c62828';
-        document.getElementById('tableSection').style.display = 'none';
-        document.getElementById('resultsSection').style.display = 'block';
-        return;
-    }
-
-    const serviceTimes = parseNumberList(serviceStr, n);
-    let interarrivalTimes = parseNumberList(interarrivalStr, n);
-
-    if (!serviceTimes || serviceTimes.length !== n) {
-        resultsDiv.textContent = 'Please enter valid service times for all customers (exactly ' + n + ' values).';
-        resultsDiv.className = 'result';
-        resultsDiv.style.background = '#ffebee';
-        resultsDiv.style.color = '#c62828';
-        document.getElementById('tableSection').style.display = 'none';
-        document.getElementById('resultsSection').style.display = 'block';
-        return;
-    }
-
-    if (!interarrivalTimes) {
-        resultsDiv.textContent = 'Please enter valid interarrival times (you may omit the first one or set it to 0).';
-        resultsDiv.className = 'result';
-        resultsDiv.style.background = '#ffebee';
-        resultsDiv.style.color = '#c62828';
-        document.getElementById('tableSection').style.display = 'none';
-        document.getElementById('resultsSection').style.display = 'block';
-        return;
-    }
-
-    // Normalize interarrival times array to length n
-    if (interarrivalTimes.length === n - 1) {
-        interarrivalTimes.unshift(0);
-    } else if (interarrivalTimes.length === n) {
-        // ok
-    } else {
-        resultsDiv.textContent = 'Number of interarrival times must be ' + n + ' (or ' + (n - 1) + ' if first is omitted).';
-        resultsDiv.className = 'result';
-        resultsDiv.style.background = '#ffebee';
-        resultsDiv.style.color = '#c62828';
-        document.getElementById('tableSection').style.display = 'none';
-        document.getElementById('resultsSection').style.display = 'block';
-        return;
-    }
-
-    // Use the shared simulation function
-    runSimulationWithTimes(n, interarrivalTimes, serviceTimes);
+    if (tbody) tbody.innerHTML = '';
+    if (resultsDiv) resultsDiv.innerHTML = '';
+    alert('Results cleared. You can run another simulation.');
 }
 
+// ========== Initialization ==========
 
+// Initialize tables on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Calculate initial tables if they have default values (silently, no alerts)
+    setTimeout(() => {
+        try {
+            const arrivalDist = readDistributionFromTable('tbodyArrival');
+            if (arrivalDist.length > 0) {
+                calculateArrivalTable();
+            }
+        } catch (e) {
+            // Silently ignore initialization errors
+        }
+        
+        try {
+            const serviceDist = readDistributionFromTable('tbodyService');
+            if (serviceDist.length > 0) {
+                calculateServiceTable();
+            }
+        } catch (e) {
+            // Silently ignore initialization errors
+        }
+        
+        updateRandomNumberCounts();
+    }, 100);
+});
