@@ -663,22 +663,40 @@ function populateResults(simData) {
     const tbody = document.querySelector('#tableResults tbody');
     tbody.innerHTML = '';
     
-    for (const row of simData.results) {
+    const results = simData.results;
+    const n = results.length;
+    
+    // Calculate totals for performance measures
+    let totalService = 0;
+    let totalWaiting = 0;
+    const serverServiceTime = [0, 0]; // Track service time per server (Server 1 and Server 2)
+    
+    for (const row of results) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${row.cust}</td>
             <td>${row.rn_arr !== null ? row.rn_arr : '--'}</td>
-            <td>${row.arr_interval !== null ? row.arr_interval : '--'}</td>
-            <td>${row.arrival_time !== null ? row.arrival_time : '--'}</td>
+            <td>${row.arr_interval !== null ? row.arr_interval.toFixed(3) : '--'}</td>
+            <td>${row.arrival_time !== null ? row.arrival_time.toFixed(3) : '--'}</td>
             <td>${row.server}</td>
             <td>${row.server_name}</td>
             <td>${row.rn_serv}</td>
-            <td>${row.service_time}</td>
-            <td>${row.start}</td>
-            <td>${row.wait}</td>
-            <td>${row.end}</td>
+            <td>${row.service_time.toFixed(3)}</td>
+            <td>${row.start.toFixed(3)}</td>
+            <td>${row.wait.toFixed(3)}</td>
+            <td>${row.end.toFixed(3)}</td>
         `;
         tbody.appendChild(tr);
+        
+        // Calculate totals
+        totalService += row.service_time;
+        totalWaiting += row.wait;
+        
+        // Track service time per server (server is 1-indexed, so subtract 1 for array index)
+        const serverIdx = row.server - 1;
+        if (serverIdx >= 0 && serverIdx < 2) {
+            serverServiceTime[serverIdx] += row.service_time;
+        }
     }
     
     const faster = simData.fasterId === 0 ? 'Server 1' : 'Server 2';
@@ -686,10 +704,104 @@ function populateResults(simData) {
     const infoDiv = document.getElementById('speedInfo');
     infoDiv.innerHTML = `Detected faster: <strong>${faster}</strong> (avg=${simData.avg1}), slower: <strong>${slower}</strong> (avg=${simData.avg2})`;
     infoDiv.classList.remove('hidden');
+    
+    // Calculate performance measures
+    const totalRunTime = results.length > 0 ? results[results.length - 1].end : 0;
+    const numServers = 2; // Two servers in this simulation
+    calculatePerformanceMeasures(n, totalService, totalWaiting, totalRunTime, numServers, serverServiceTime);
+}
+
+function calculatePerformanceMeasures(n, totalService, totalWaiting, totalRunTime, numServers, serverServiceTime) {
+    const resultsDiv = document.getElementById('queueResults');
+    if (!resultsDiv) return;
+    
+    // Calculate metrics
+    const avgWaiting = totalWaiting / n;
+    const utilization = totalRunTime > 0 ? totalService / (numServers * totalRunTime) : 0;
+    
+    // Calculate individual server utilization
+    const serverUtilizations = [];
+    for (let i = 0; i < numServers; i++) {
+        const util = totalRunTime > 0 ? serverServiceTime[i] / totalRunTime : 0;
+        serverUtilizations.push(util);
+    }
+    
+    // Build detailed step-by-step explanations
+    let html = '<div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 2px solid #D2B48C;">';
+    html += '<h3 style="color: #5C4033; margin-top: 0; border-bottom: 2px solid #8B4513; padding-bottom: 10px;">Performance Measures - Calculation Steps</h3>';
+    
+    // 1. Average waiting time
+    html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
+    html += '<h4 style="color: #5C4033; margin-top: 0;">1. Average Waiting Time (minutes)</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Average waiting time = Total waiting time ÷ Total number of customers</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Sum all waiting times from the simulation table = ${totalWaiting.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Total number of customers = ${n}</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Average = ${totalWaiting.toFixed(2)} ÷ ${n} = <strong style="color: #8B4513; font-size: 1.1em;">${avgWaiting.toFixed(2)} minutes</strong></p>`;
+    html += '</div>';
+    
+    // 2. Overall Server Utilization
+    html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
+    html += '<h4 style="color: #5C4033; margin-top: 0;">2. Overall Server Utilization</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Utilization = Total service time ÷ (Number of servers × Total run time)</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Sum all service times from the simulation table = ${totalService.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Number of servers = ${numServers}</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Total run time = Time when last service ends = ${totalRunTime.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 4:</strong> Utilization = ${totalService.toFixed(2)} ÷ (${numServers} × ${totalRunTime.toFixed(2)}) = ${totalService.toFixed(2)} ÷ ${(numServers * totalRunTime).toFixed(2)} = <strong style="color: #8B4513; font-size: 1.1em;">${utilization.toFixed(4)}</strong> or <strong style="color: #8B4513; font-size: 1.1em;">${(utilization * 100).toFixed(2)}%</strong></p>`;
+    html += '</div>';
+    
+    // 3. Individual Server Utilization
+    html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
+    html += '<h4 style="color: #5C4033; margin-top: 0;">3. Individual Server Utilization</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Server Utilization = Total service time for that server ÷ Total run time</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Total run time = Time when last service ends = ${totalRunTime.toFixed(2)} minutes</p>`;
+    
+    for (let i = 0; i < numServers; i++) {
+        const serverNum = i + 1;
+        html += `<p style="margin: 5px 0;"><strong>Server ${serverNum}:</strong></p>`;
+        html += `<p style="margin: 5px 0; padding-left: 20px;">- Total service time for Server ${serverNum} = ${serverServiceTime[i].toFixed(2)} minutes</p>`;
+        html += `<p style="margin: 5px 0; padding-left: 20px;">- Utilization = ${serverServiceTime[i].toFixed(2)} ÷ ${totalRunTime.toFixed(2)} = <strong style="color: #8B4513; font-size: 1.1em;">${serverUtilizations[i].toFixed(4)}</strong> or <strong style="color: #8B4513; font-size: 1.1em;">${(serverUtilizations[i] * 100).toFixed(2)}%</strong></p>`;
+    }
+    html += '</div>';
+    
+    // Summary box
+    html += '<div style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #F5E6D3 0%, #E6D5C3 100%); border-radius: 8px; border: 2px solid #8B4513;">';
+    html += '<h3 style="color: #5C4033; margin-top: 0; text-align: center;">Summary of Results</h3>';
+    html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px;">';
+    html += `<div><strong>Average waiting time:</strong> ${avgWaiting.toFixed(2)} minutes</div>`;
+    html += `<div><strong>Overall server utilization:</strong> ${utilization.toFixed(4)} (${(utilization * 100).toFixed(2)}%)</div>`;
+    for (let i = 0; i < numServers; i++) {
+        html += `<div><strong>Server ${i + 1} utilization:</strong> ${serverUtilizations[i].toFixed(4)} (${(serverUtilizations[i] * 100).toFixed(2)}%)</div>`;
+    }
+    html += '</div>';
+    html += '</div>';
+    
+    html += '</div>';
+
+    if (resultsDiv) {
+        resultsDiv.innerHTML = html;
+        resultsDiv.className = 'result';
+        resultsDiv.style.background = '#f9f9f9';
+        resultsDiv.style.color = '#5C4033';
+        resultsDiv.style.padding = '20px';
+        resultsDiv.style.borderRadius = '8px';
+        resultsDiv.style.marginTop = '20px';
+    }
+    
+    // Scroll to top of the page to show simulation table first (not performance measures)
+    setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
 }
 
 function clearResults() {
-    document.querySelector('#tableResults tbody').innerHTML = '';
+    const tbody = document.querySelector('#tableResults tbody');
+    const resultsDiv = document.getElementById('queueResults');
+    if (tbody) tbody.innerHTML = '';
+    if (resultsDiv) resultsDiv.innerHTML = '';
+    
+    const speedDiv = document.getElementById('speedInfo');
+    if (speedDiv) speedDiv.classList.add('hidden');
+    
     alert('Results cleared. You can run another simulation.');
 }
 

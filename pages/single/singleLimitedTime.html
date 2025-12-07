@@ -3,50 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Call Center Multi-Server Simulation</title>
+    <title>Single-Server Time-Limited Simulation</title>
     <!-- Global layout & buttons -->
     <link rel="stylesheet" href="../../css/main.css">
     <!-- Simulation-specific layout (tables, inputs, etc.) -->
     <link rel="stylesheet" href="../../css/simulation.css">
-    <!-- Multi-Limited Customer specific styles -->
-    <link rel="stylesheet" href="../../css/multiLimitedCustomer.css">
+    <!-- Single-Limited Time specific styles -->
+    <link rel="stylesheet" href="../../css/multiLimitedTime.css">
 </head>
 <body>
-    <div class="container">
+<div class="container">
         <button class="btn back-btn" onclick="window.location.href='../home.html'">← Back to Main Menu</button>
         
-        <h1>Multi-Server Simulation</h1>
+        <h1>Single-Server Time-Limited Simulation</h1>
 
         <!-- Tabs Navigation -->
         <div class="tabs-nav">
-            <button class="tab-btn active" onclick="switchTab(0)">Step 1 — Rule & Customers</button>
+            <button class="tab-btn active" onclick="switchTab(0)">Step 1 — Time Limit</button>
             <button class="tab-btn" onclick="switchTab(1)">Step 2 — Interarrivals</button>
             <button class="tab-btn" onclick="switchTab(2)">Step 3 — Service Times</button>
             <button class="tab-btn" onclick="switchTab(3)">Step 4 — Random Numbers</button>
             <button class="tab-btn" onclick="switchTab(4)">Step 5 — Simulation Table</button>
         </div>
 
-        <!-- TAB 1: Rule & Customers -->
+        <!-- TAB 1: Time Limit -->
         <div id="tab0" class="tab-content active">
             <div class="tab-body">
-                <h2>Step 1: Rule & Customers</h2>
-                <p>When both servers are idle, who should take the call first?</p>
+                <h2>Step 1: Time Limit</h2>
+                <p>Set the time limit for the simulation. The simulation will stop when this time limit is reached.</p>
                 
-                <div class="radio-group">
-                    <label>
-                        <input type="radio" name="preference" value="Faster" checked>
-                        Faster server first
-                    </label>
-                    <label>
-                        <input type="radio" name="preference" value="Slower">
-                        Slower server first
-                    </label>
-                </div>
+                <div class="input-group">
+<label>Select Limitation Type:</label>
+<select id="limitType">
+<option value="arrival">Limited by Arrival Time</option>
+<option value="serviceEnd">Limited by Service End Time</option>
+<option value="both">Strict Limited (Arrival + Service End)</option>
+</select>
+</div>
 
                 <div class="input-group">
-                    <label>Enter number of customers to simulate:</label>
-                    <input type="number" id="numCustomers" min="1" max="100" placeholder="e.g., 10">
-                    <small>(Simulation will stop after this many customers)</small>
+                    <label>Time Limit:</label>
+                    <input type="number" id="timeLimit" min="0.1" step="0.1" placeholder="e.g., 100.0">
+                    <small>(Simulation will stop when this time limit is reached)</small>
                 </div>
 
                 <button class="btn btn-primary" onclick="nextTab(1)">Next → Step 2</button>
@@ -60,9 +58,11 @@
                 <p>Fill in the table directly with Time and Probability values. Cumulative and Interval will be calculated automatically.</p>
                 
                 <div class="table-container">
-                        <div class="table-controls">
-                            <button class="btn-add-row" onclick="addArrivalRow()">Add Row</button>
-                        </div>
+                    <div class="table-controls">
+                        <button class="btn-add-row" onclick="addArrivalRow()">Add Row</button>
+                        <input type="number" id="arrivalRowCount" min="1" max="50" value="3" placeholder="Rows" style="width: 80px; margin: 0 5px; padding: 5px;">
+                        <button class="btn btn-secondary" onclick="generateArrivalRows()">Generate Rows</button>
+                    </div>
                     
                     <textarea id="txtArrivals" rows="4" placeholder="Alternative: Enter time,prob (one per line)&#10;1,0.25&#10;2,0.40&#10;3,0.35" style="margin-bottom: 15px; display: none;"></textarea>
 
@@ -114,103 +114,53 @@
         <div id="tab2" class="tab-content">
             <div class="tab-body">
                 <h2>Step 3: Service Times</h2>
+                <p>Fill in the table directly with Time and Probability values. Cumulative and Interval will be calculated automatically.</p>
                 
-                <div class="service-container">
-                    <div class="service-box">
-                        <h3>Server 1</h3>
-                        <p>Fill in the table directly with Time and Probability values.</p>
-                        <div class="table-controls">
-                            <button class="btn-add-row" onclick="addServiceRow(1)"> Add Row</button>
-                        </div>
-                        <textarea id="txtS1" rows="4" placeholder="Alternative: Enter time,prob (one per line)" style="margin-bottom: 15px; display: none;"></textarea>
-                        <h4>Table</h4>
-                        <div class="table-container">
-                            <table id="tableS1" class="editable-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 50px;"></th>
-                                        <th>Time</th>
-                                        <th>Probability</th>
-                                        <th>Cumulative</th>
-                                        <th>Interval</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbodyS1">
-                                    <tr>
-                                        <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, 1)" title="Delete row">🗑️</button></td>
-                                        <td><input type="number" class="table-input" step="0.1" min="0" placeholder="Time" onchange="calculateServiceTable(1)"></td>
-                                        <td><input type="number" class="table-input" step="0.01" min="0" max="1" placeholder="Prob" onchange="calculateServiceTable(1)"></td>
-                                        <td class="calculated-cell"></td>
-                                        <td class="calculated-cell"></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, 1)" title="Delete row">🗑️</button></td>
-                                        <td><input type="number" class="table-input" step="0.1" min="0" placeholder="Time" onchange="calculateServiceTable(1)"></td>
-                                        <td><input type="number" class="table-input" step="0.01" min="0" max="1" placeholder="Prob" onchange="calculateServiceTable(1)"></td>
-                                        <td class="calculated-cell"></td>
-                                        <td class="calculated-cell"></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, 1)" title="Delete row">🗑️</button></td>
-                                        <td><input type="number" class="table-input" step="0.1" min="0" placeholder="Time" onchange="calculateServiceTable(1)"></td>
-                                        <td><input type="number" class="table-input" step="0.01" min="0" max="1" placeholder="Prob" onchange="calculateServiceTable(1)"></td>
-                                        <td class="calculated-cell"></td>
-                                        <td class="calculated-cell"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                <div class="table-container">
+                    <div class="table-controls">
+                        <button class="btn-add-row" onclick="addServiceRow()">Add Row</button>
+                        <input type="number" id="serviceRowCount" min="1" max="50" value="3" placeholder="Rows" style="width: 80px; margin: 0 5px; padding: 5px;">
+                        <button class="btn btn-secondary" onclick="generateServiceRows()">Generate Rows</button>
                     </div>
-
-                    <div class="service-box">
-                        <h3>Server 2</h3>
-                        <p>Fill in the table directly with Time and Probability values.</p>
-                        <div class="table-controls">
-                            <button class="btn-add-row" onclick="addServiceRow(2)"> Add Row</button>
-                        </div>
-                        <textarea id="txtS2" rows="4" placeholder="Alternative: Enter time,prob (one per line)" style="margin-bottom: 15px; display: none;"></textarea>
-                        <h4>Table</h4>
-                        <div class="table-container">
-                            <table id="tableS2" class="editable-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 50px;"></th>
-                                        <th>Time</th>
-                                        <th>Probability</th>
-                                        <th>Cumulative</th>
-                                        <th>Interval</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbodyS2">
-                                    <tr>
-                                        <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, 2)" title="Delete row">🗑️</button></td>
-                                        <td><input type="number" class="table-input" step="0.1" min="0" onchange="calculateServiceTable(2)"></td>
-                                        <td><input type="number" class="table-input" step="0.01" min="0" max="1" onchange="calculateServiceTable(2)"></td>
-                                        <td class="calculated-cell"></td>
-                                        <td class="calculated-cell"></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, 2)" title="Delete row">🗑️</button></td>
-                                        <td><input type="number" class="table-input" step="0.1" min="0" onchange="calculateServiceTable(2)"></td>
-                                        <td><input type="number" class="table-input" step="0.01" min="0" max="1" onchange="calculateServiceTable(2)"></td>
-                                        <td class="calculated-cell"></td>
-                                        <td class="calculated-cell"></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, 2)" title="Delete row">🗑️</button></td>
-                                        <td><input type="number" class="table-input" step="0.1" min="0" onchange="calculateServiceTable(2)"></td>
-                                        <td><input type="number" class="table-input" step="0.01" min="0" max="1" onchange="calculateServiceTable(2)"></td>
-                                        <td class="calculated-cell"></td>
-                                        <td class="calculated-cell"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    
+                    <textarea id="txtService" rows="4" placeholder="Alternative: Enter time,prob (one per line)" style="margin-bottom: 15px; display: none;"></textarea>
+                    
+                    <h3>Service Time Table (Time | Probability | Cumulative | Interval 01–100)</h3>
+                    <table id="tableService" class="editable-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;"></th>
+                                <th>Time</th>
+                                <th>Probability</th>
+                                <th>Cumulative</th>
+                                <th>Interval</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyService">
+                            <tr>
+                                <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this)" title="Delete row">🗑️</button></td>
+                                <td><input type="number" class="table-input" step="0.1" min="0" placeholder="Time" onchange="calculateServiceTable()"></td>
+                                <td><input type="number" class="table-input" step="0.01" min="0" max="1" placeholder="Prob" onchange="calculateServiceTable()"></td>
+                                <td class="calculated-cell"></td>
+                                <td class="calculated-cell"></td>
+                            </tr>
+                            <tr>
+                                <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this)" title="Delete row">🗑️</button></td>
+                                <td><input type="number" class="table-input" step="0.1" min="0" placeholder="Time" onchange="calculateServiceTable()"></td>
+                                <td><input type="number" class="table-input" step="0.01" min="0" max="1" placeholder="Prob" onchange="calculateServiceTable()"></td>
+                                <td class="calculated-cell"></td>
+                                <td class="calculated-cell"></td>
+                            </tr>
+                            <tr>
+                                <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this)" title="Delete row">🗑️</button></td>
+                                <td><input type="number" class="table-input" step="0.1" min="0" placeholder="Time" onchange="calculateServiceTable()"></td>
+                                <td><input type="number" class="table-input" step="0.01" min="0" max="1" placeholder="Prob" onchange="calculateServiceTable()"></td>
+                                <td class="calculated-cell"></td>
+                                <td class="calculated-cell"></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-
-                <div id="speedDetection" class="alert hidden"></div>
-
 
                 <div class="button-group">
                     <button class="btn btn-secondary" onclick="prevTab(1)">← Back</button>
@@ -274,7 +224,7 @@
                             </div>
                             
                             <div class="random-table-box">
-                                <h4>Service Random Numbers (for both servers, shared list)</h4>
+                                <h4>Service Random Numbers (for all customers)</h4>
                                 <div class="table-controls">
                                     <button class="btn-add-row" onclick="addRandomNumberRow('service')">Add Row</button>
                                     <input type="number" id="randomServiceRowCount" min="1" max="100" value="5" placeholder="Rows" style="width: 80px; margin: 0 5px; padding: 5px;">
@@ -364,14 +314,14 @@
                         
                         <div class="input-group">
                             <label>Number of Arrival Random Numbers:</label>
-                            <input type="number" id="genArrCount" min="1" placeholder="e.g., 20">
-                            <small>For customers 2..N</small>
+                            <input type="number" id="genArrCount" min="1" placeholder="e.g., 50">
+                            <small>For customers 2..N (recommended: enough for time limit)</small>
                         </div>
                         
                         <div class="input-group">
                             <label>Number of Service Random Numbers:</label>
-                            <input type="number" id="genServCount" min="1" placeholder="e.g., 20">
-                            <small>For both servers</small>
+                            <input type="number" id="genServCount" min="1" placeholder="e.g., 50">
+                            <small>For all customers (recommended: enough for time limit)</small>
                         </div>
                         
                         <button class="btn btn-secondary" onclick="generateRandomNumbers()">Generate Random Numbers</button>
@@ -401,30 +351,28 @@
                     <button class="btn btn-secondary" onclick="prevTab(2)">← Back</button>
                 </div>
             </div>
-        </div>
+</div>
 
         <!-- TAB 5: Results -->
         <div id="tab4" class="tab-content">
             <div class="tab-body">
                 <h2>Step 5: Simulation Results</h2>
                 
-                <div id="speedInfo" class="alert hidden"></div>
+                <div id="timeLimitInfo" class="alert"></div>
 
                 <div class="table-container scrollable">
                     <table id="tableResults" class="results-table">
                         <thead>
                             <tr>
-                                <th>Cust</th>
-                                <th>RN(Arr)</th>
-                                <th>ArrInt</th>
-                                <th>ArrTime</th>
-                                <th>Server</th>
-                                <th>ServerName</th>
-                                <th>RN(Serv)</th>
-                                <th>ServTime</th>
-                                <th>Start</th>
-                                <th>Wait</th>
-                                <th>End</th>
+                                <th>Customer</th>
+                                <th>Interarrival Time</th>
+                                <th>Arrival Time</th>
+                                <th>Service Time</th>
+                                <th>Time Service Begins</th>
+                                <th>Time Service Ends</th>
+                                <th>Waiting Time in Queue</th>
+                                <th>Time in System</th>
+                                <th>Idle Time of Server</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -442,10 +390,10 @@
                 </div>
             </div>
         </div>
-    </div>
+</div>
 
     <script src="../../js/randomNumbers.js"></script>
-    <script src="../../js/multipleServer/multiLimitedCustomer.js"></script>
+    <script src="../../js/singleServer/singleLimitedTime.js"></script>
     <script>
         // ========== Random Number Generation Functions ==========
         
@@ -473,8 +421,6 @@
         }
         
         function validateRandomNumbers(textarea) {
-            // This function is kept for backward compatibility but not actively used
-            // Random numbers are now managed through table cells
             updateRandomNumberCounts();
         }
         

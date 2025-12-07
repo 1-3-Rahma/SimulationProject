@@ -65,7 +65,7 @@ function chooseSub(choice) {
 
     if (choice === "single-time") {
         sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
-        window.location.href = "single/singleLimitedService.html";
+        window.location.href = "single/singleLimitedTime.html";
         return;
     }
 

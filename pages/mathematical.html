@@ -3,86 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mathematical Calculations</title>
+    <title>Mathematical Queuing Theory</title>
     <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/simulation.css">
     <link rel="stylesheet" href="../css/mathematical.css">
 </head>
 <body>
     <div class="container">
         <button class="btn back-btn" onclick="window.location.href='home.html'">← Back to Main Menu</button>
         
-        <h1>Mathematical Calculations</h1>
+        <h1>Mathematical Queuing Theory</h1>
 
-        <!-- Mean Calculator -->
-        <div class="calc-section">
-            <h2>Mean (Average) Calculator</h2>
-            <div class="input-group">
-                <label>Enter numbers (comma-separated):</label>
-                <input type="text" id="meanInput" placeholder="e.g., 10, 20, 30, 40, 50">
-            </div>
-            <button class="btn" onclick="calculateMean()">Calculate Mean</button>
-            <div id="meanResult" class="result hidden"></div>
+        <!-- Tabs Navigation -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab(0)">Performance Measures</button>
+            <button class="tab-btn" onclick="switchTab(1)">Probability Calculations</button>
+            <button class="tab-btn" onclick="switchTab(2)">Cost of Queuing Model</button>
         </div>
 
-        <!-- Standard Deviation Calculator -->
-        <div class="calc-section">
-            <h2>Standard Deviation Calculator</h2>
-            <div class="input-group">
-                <label>Enter numbers (comma-separated):</label>
-                <input type="text" id="stdInput" placeholder="e.g., 10, 20, 30, 40, 50">
+        <!-- TAB 1: Performance Measures -->
+        <div id="tab0" class="tab-content active">
+            <div class="tab-body">
+                <h2>System Measures of Performance</h2>
+                <p>Enter the arrival rate (λ) and service rate (μ) to calculate performance measures.</p>
+                
+                <div class="input-group">
+                    <label>Arrival Rate (λ):</label>
+                    <input type="number" id="lambda" step="0.01" min="0.01" placeholder="e.g., 2.5">
+                    <small>Average number of customers arriving per unit time</small>
+                </div>
+
+                <div class="input-group">
+                    <label>Service Rate (μ):</label>
+                    <input type="number" id="mu" step="0.01" min="0.01" placeholder="e.g., 3.0">
+                    <small>Average number of customers served per unit time (must be greater than λ)</small>
+                </div>
+
+                <button class="btn btn-primary" onclick="calculatePerformanceMeasures()">Calculate Performance Measures</button>
+
+                <div id="performanceResults" class="results-container"></div>
             </div>
-            <button class="btn" onclick="calculateStdDev()">Calculate Standard Deviation</button>
-            <div id="stdResult" class="result hidden"></div>
         </div>
 
-        <!-- Probability Calculator -->
-        <div class="calc-section">
-            <h2>Probability Calculator</h2>
-            <div class="input-group">
-                <label>Favorable Outcomes:</label>
-                <input type="number" id="favorable" placeholder="e.g., 3">
+        <!-- TAB 2: Probability Calculations -->
+        <div id="tab1" class="tab-content">
+            <div class="tab-body">
+                <h2>Probability Calculations</h2>
+                <p>Calculate the probability of having no customers (P₀) or n customers (Pₙ) in the system.</p>
+                
+                <div class="input-group">
+                    <label>Arrival Rate (λ):</label>
+                    <input type="number" id="lambdaProb" step="0.01" min="0.01" placeholder="e.g., 2.5">
+                    <small>Average number of customers arriving per unit time</small>
+                </div>
+
+                <div class="input-group">
+                    <label>Service Rate (μ):</label>
+                    <input type="number" id="muProb" step="0.01" min="0.01" placeholder="e.g., 3.0">
+                    <small>Average number of customers served per unit time (must be greater than λ)</small>
+                </div>
+
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="probType" value="P0" checked onchange="toggleProbabilityInput()">
+                        Calculate P₀ (Probability of having no customer in the system)
+                    </label>
+                    <label>
+                        <input type="radio" name="probType" value="Pn" onchange="toggleProbabilityInput()">
+                        Calculate Pₙ (Probability of having n customers in the system)
+                    </label>
+                </div>
+
+                <div class="input-group" id="nInputGroup" style="display: none;">
+                    <label>Number of Customers (n):</label>
+                    <input type="number" id="nCustomers" step="1" min="0" placeholder="e.g., 3">
+                    <small>Enter the number of customers in the system</small>
+                </div>
+
+                <button class="btn btn-primary" onclick="calculateProbability()">Calculate Probability</button>
+
+                <div id="probabilityResults" class="results-container"></div>
             </div>
-            <div class="input-group">
-                <label>Total Possible Outcomes:</label>
-                <input type="number" id="total" placeholder="e.g., 10">
-            </div>
-            <button class="btn" onclick="calculateProbability()">Calculate Probability</button>
-            <div id="probResult" class="result hidden"></div>
         </div>
 
-        <!-- Queue Theory - Little's Law -->
-        <div class="calc-section">
-            <h2>Little's Law Calculator</h2>
-            <p style="font-size: 14px; color: #666;">L = λ × W (where L = average number in system, λ = arrival rate, W = average time in system)</p>
-            <div class="input-group">
-                <label>Arrival Rate (λ):</label>
-                <input type="number" id="arrivalRate" placeholder="e.g., 5">
-            </div>
-            <div class="input-group">
-                <label>Average Time in System (W):</label>
-                <input type="number" id="avgTime" placeholder="e.g., 2">
-            </div>
-            <button class="btn" onclick="calculateLittlesLaw()">Calculate Average Number in System</button>
-            <div id="littlesResult" class="result hidden"></div>
-        </div>
+        <!-- TAB 3: Cost of Queuing Model -->
+        <div id="tab2" class="tab-content">
+            <div class="tab-body">
+                <h2>Cost of Queuing Model</h2>
+                <p>Calculate the total cost of the queuing system using the formula: T.C. = C₁ × C + C₂ × Lₛ</p>
+                
+                <div class="input-group">
+                    <label>Arrival Rate (λ):</label>
+                    <input type="number" id="lambdaCost" step="0.01" min="0.01" placeholder="e.g., 2.5">
+                    <small>Average number of customers arriving per unit time</small>
+                </div>
 
-        <!-- Utilization Calculator -->
-        <div class="calc-section">
-            <h2>Server Utilization Calculator</h2>
-            <p style="font-size: 14px; color: #666;">ρ = λ / μ (where λ = arrival rate, μ = service rate)</p>
-            <div class="input-group">
-                <label>Arrival Rate (λ):</label>
-                <input type="number" id="utilArrival" placeholder="e.g., 4">
+                <div class="input-group">
+                    <label>Service Rate (μ):</label>
+                    <input type="number" id="muCost" step="0.01" min="0.01" placeholder="e.g., 3.0">
+                    <small>Average number of customers served per unit time (must be greater than λ)</small>
+                </div>
+
+                <div class="input-group">
+                    <label>Cost of Server (C₁):</label>
+                    <input type="number" id="c1" step="0.01" min="0" placeholder="e.g., 100">
+                    <small>Cost per server per unit time</small>
+                </div>
+
+                <div class="input-group">
+                    <label>Number of Servers (C):</label>
+                    <input type="number" id="numServersCost" step="1" min="1" value="1" placeholder="e.g., 1">
+                    <small>Total number of servers</small>
+                </div>
+
+                <div class="input-group">
+                    <label>Waiting Time Cost for Customer (C₂):</label>
+                    <input type="number" id="c2" step="0.01" min="0" placeholder="e.g., 50">
+                    <small>Cost per customer per unit time spent waiting</small>
+                </div>
+
+                <button class="btn btn-primary" onclick="calculateCost()">Calculate Total Cost</button>
+
+                <div id="costResults" class="results-container"></div>
             </div>
-            <div class="input-group">
-                <label>Service Rate (μ):</label>
-                <input type="number" id="serviceRate" placeholder="e.g., 5">
-            </div>
-            <button class="btn" onclick="calculateUtilization()">Calculate Utilization</button>
-            <div id="utilResult" class="result hidden"></div>
         </div>
     </div>
 
     <script src="../js/mathematical.js"></script>
 </body>
 </html>
+

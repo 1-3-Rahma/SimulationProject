@@ -62,28 +62,15 @@ function mapRandomToTime(rn, table) {
     return table[table.length - 1].time;
 }
 
-function weightedAverage(dist) {
-    return dist.reduce((sum, [t, p]) => sum + t * p, 0);
-}
-
 // ========== Time-Limited Simulation Core ==========
 
-function runTimeLimitedSimulation(timeLimit, limitType, arrivalTable, serverTables, arrRns, servRns, preference, numServers) {
-    const serversAvailable = new Array(numServers).fill(0.0);
+function runTimeLimitedSimulation(timeLimit, limitType, arrivalTable, serviceTable, arrRns, servRns) {
+    let serverAvailable = 0.0;
     let servIdx = 0;
     let arrIdx = 0;
     const results = [];
     let currentTime = 0.0;
     let customerNumber = 1;
-
-    // Calculate server averages for faster/slower detection
-    const serverAverages = serverTables.map((table, idx) => ({
-        id: idx,
-        avg: weightedAverage(table.map(r => [r.time, r.prob]))
-    }));
-    serverAverages.sort((a, b) => a.avg - b.avg);
-    const fasterId = serverAverages[0].id;
-    const slowerId = serverAverages[serverAverages.length - 1].id;
 
     while (true) {
         let arrivalTime, arrInterval, rnArr;
@@ -110,42 +97,7 @@ function runTimeLimitedSimulation(timeLimit, limitType, arrivalTable, serverTabl
             }
         }
 
-        // Find available server(s)
-        const availableServers = [];
-        for (let i = 0; i < numServers; i++) {
-            if (serversAvailable[i] <= arrivalTime) {
-                availableServers.push(i);
-            }
-        }
-
-        let serverId;
-        if (availableServers.length === 0) {
-            // All servers busy, choose the one that becomes free first
-            serverId = serversAvailable.indexOf(Math.min(...serversAvailable));
-        } else if (availableServers.length === 1) {
-            serverId = availableServers[0];
-        } else {
-            // Multiple servers available, choose based on preference
-            if (preference === 'Faster') {
-                // Find fastest available server
-                const fastestAvailable = availableServers.reduce((fastest, id) => {
-                    const fastestAvg = serverAverages.find(s => s.id === fastest)?.avg || Infinity;
-                    const currentAvg = serverAverages.find(s => s.id === id)?.avg || Infinity;
-                    return currentAvg < fastestAvg ? id : fastest;
-                });
-                serverId = fastestAvailable;
-            } else {
-                // Find slowest available server
-                const slowestAvailable = availableServers.reduce((slowest, id) => {
-                    const slowestAvg = serverAverages.find(s => s.id === slowest)?.avg || 0;
-                    const currentAvg = serverAverages.find(s => s.id === id)?.avg || 0;
-                    return currentAvg > slowestAvg ? id : slowest;
-                });
-                serverId = slowestAvailable;
-            }
-        }
-
-        const startService = customerNumber === 1 ? 0.0 : Math.max(arrivalTime, serversAvailable[serverId]);
+        const startService = customerNumber === 1 ? 0.0 : Math.max(arrivalTime, serverAvailable);
         const wait = customerNumber === 1 ? 0.0 : startService - arrivalTime;
 
         if (servIdx >= servRns.length) {
@@ -155,8 +107,7 @@ function runTimeLimitedSimulation(timeLimit, limitType, arrivalTable, serverTabl
         const rnServ = servRns[servIdx];
         servIdx++;
         
-        const servTable = serverTables[serverId];
-        const servTime = mapRandomToTime(rnServ, servTable);
+        const servTime = mapRandomToTime(rnServ, serviceTable);
         const endService = startService + servTime;
         
         // Check stopping condition based on service end time
@@ -168,8 +119,6 @@ function runTimeLimitedSimulation(timeLimit, limitType, arrivalTable, serverTabl
                     rn_arr: rnArr,
                     arr_interval: arrInterval,
                     arrival_time: parseFloat(arrivalTime.toFixed(3)),
-                    server: serverId + 1,
-                    server_name: `Server ${serverId + 1}`,
                     rn_serv: rnServ,
                     service_time: servTime,
                     start: parseFloat(startService.toFixed(3)),
@@ -180,15 +129,13 @@ function runTimeLimitedSimulation(timeLimit, limitType, arrivalTable, serverTabl
             }
         }
 
-        serversAvailable[serverId] = endService;
+        serverAvailable = endService;
 
         results.push({
             cust: customerNumber,
             rn_arr: rnArr,
             arr_interval: arrInterval,
             arrival_time: parseFloat(arrivalTime.toFixed(3)),
-            server: serverId + 1,
-            server_name: `Server ${serverId + 1}`,
             rn_serv: rnServ,
             service_time: servTime,
             start: parseFloat(startService.toFixed(3)),
@@ -205,19 +152,15 @@ function runTimeLimitedSimulation(timeLimit, limitType, arrivalTable, serverTabl
     }
 
     return {
-        results: results,
-        serverAverages: serverAverages.map(s => ({ id: s.id, avg: parseFloat(s.avg.toFixed(4)) })),
-        fasterId: fasterId,
-        slowerId: slowerId
+        results: results
     };
 }
 
 // ========== Global State ==========
 
 let arrivalTable = null;
-let serverTables = []; // Array of tables for dynamic servers
+let serviceTable = null;
 let currentTab = 0;
-let numServers = 2;
 
 // ========== Tab Management ==========
 
@@ -236,85 +179,6 @@ function nextTab(tabIdx) {
 
 function prevTab(tabIdx) {
     switchTab(tabIdx);
-}
-
-// ========== Server Count Management ==========
-
-function updateServerCount() {
-    const input = document.getElementById('numServers');
-    if (!input) return;
-    
-    const newCount = parseInt(input.value) || 2;
-    if (newCount < 2) {
-        alert('Minimum 2 servers required.');
-        input.value = 2;
-        return;
-    }
-    
-    numServers = newCount;
-    generateServiceTables();
-}
-
-function generateServiceTables() {
-    const container = document.getElementById('serviceContainer');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    for (let i = 1; i <= numServers; i++) {
-        const serviceBox = document.createElement('div');
-        serviceBox.className = 'service-box';
-        serviceBox.innerHTML = `
-            <h3>Server ${i}</h3>
-            <p>Fill in the table directly with Time and Probability values.</p>
-            <div class="table-controls">
-                <button class="btn-add-row" onclick="addServiceRow(${i})"> Add Row</button>
-                <input type="number" id="serviceRowCount${i}" min="1" max="50" value="3" placeholder="Rows" style="width: 80px; margin: 0 5px; padding: 5px;">
-                <button class="btn btn-secondary" onclick="generateServiceRows(${i})">Generate Rows</button>
-            </div>
-            <h4>Table</h4>
-            <div class="table-container">
-                <table id="tableS${i}" class="editable-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 50px;"></th>
-                            <th>Time</th>
-                            <th>Probability</th>
-                            <th>Cumulative</th>
-                            <th>Interval</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbodyS${i}">
-                        <tr>
-                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, ${i})" title="Delete row">🗑️</button></td>
-                            <td><input type="number" class="table-input" step="0.1" min="0" placeholder="Time" onchange="calculateServiceTable(${i})"></td>
-                            <td><input type="number" class="table-input" step="0.01" min="0" max="1" placeholder="Prob" onchange="calculateServiceTable(${i})"></td>
-                            <td class="calculated-cell"></td>
-                            <td class="calculated-cell"></td>
-                        </tr>
-                        <tr>
-                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, ${i})" title="Delete row">🗑️</button></td>
-                            <td><input type="number" class="table-input" step="0.1" min="0" placeholder="Time" onchange="calculateServiceTable(${i})"></td>
-                            <td><input type="number" class="table-input" step="0.01" min="0" max="1" placeholder="Prob" onchange="calculateServiceTable(${i})"></td>
-                            <td class="calculated-cell"></td>
-                            <td class="calculated-cell"></td>
-                        </tr>
-                        <tr>
-                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, ${i})" title="Delete row">🗑️</button></td>
-                            <td><input type="number" class="table-input" step="0.1" min="0" placeholder="Time" onchange="calculateServiceTable(${i})"></td>
-                            <td><input type="number" class="table-input" step="0.01" min="0" max="1" placeholder="Prob" onchange="calculateServiceTable(${i})"></td>
-                            <td class="calculated-cell"></td>
-                            <td class="calculated-cell"></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        `;
-        container.appendChild(serviceBox);
-    }
-    
-    // Reset server tables array
-    serverTables = new Array(numServers).fill(null);
 }
 
 // ========== Table Building ==========
@@ -418,9 +282,6 @@ function generateArrivalRows() {
     const tbody = document.getElementById('tbodyArrival');
     if (!tbody) return;
     
-    // Clear existing rows first (optional - you can remove this if you want to append)
-    // tbody.innerHTML = '';
-    
     for (let i = 0; i < count; i++) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -450,13 +311,12 @@ function deleteArrivalRow(btn) {
     calculateArrivalTable();
 }
 
-function calculateServiceTable(serverId) {
+function calculateServiceTable() {
     try {
-        const tbodyId = `tbodyS${serverId}`;
-        const dist = readDistributionFromTable(tbodyId);
+        const dist = readDistributionFromTable('tbodyService');
         
         if (dist.length === 0) {
-            const tbody = document.getElementById(tbodyId);
+            const tbody = document.getElementById('tbodyService');
             if (!tbody) return;
             
             const rows = tbody.querySelectorAll('tr');
@@ -479,9 +339,9 @@ function calculateServiceTable(serverId) {
         }
         
         const table = buildCumulativeIntervals(dist);
-        serverTables[serverId - 1] = table;
+        serviceTable = table;
         
-        const tbody = document.getElementById(tbodyId);
+        const tbody = document.getElementById('tbodyService');
         const rows = tbody.querySelectorAll('tr');
         
         rows.forEach((row, idx) => {
@@ -494,23 +354,20 @@ function calculateServiceTable(serverId) {
                 if (intervalCell) intervalCell.textContent = interval;
             }
         });
-        
-        updateSpeedDetection();
     } catch (err) {
         alert(`Calculation error: ${err.message}`);
     }
 }
 
-function addServiceRow(serverId) {
-    const tbodyId = `tbodyS${serverId}`;
-    const tbody = document.getElementById(tbodyId);
+function addServiceRow() {
+    const tbody = document.getElementById('tbodyService');
     if (!tbody) return;
     
     const tr = document.createElement('tr');
     tr.innerHTML = `
-        <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, ${serverId})" title="Delete row">🗑️</button></td>
-        <td><input type="number" class="table-input" step="0.1" min="0" value="" placeholder="Time" onchange="calculateServiceTable(${serverId})" onblur="if(this.value !== '') calculateServiceTable(${serverId})"></td>
-        <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="" placeholder="Prob" onchange="calculateServiceTable(${serverId})" onblur="if(this.value !== '') calculateServiceTable(${serverId})"></td>
+        <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this)" title="Delete row">🗑️</button></td>
+        <td><input type="number" class="table-input" step="0.1" min="0" value="" placeholder="Time" onchange="calculateServiceTable()" onblur="if(this.value !== '') calculateServiceTable()"></td>
+        <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="" placeholder="Prob" onchange="calculateServiceTable()" onblur="if(this.value !== '') calculateServiceTable()"></td>
         <td class="calculated-cell">--</td>
         <td class="calculated-cell">--</td>
     `;
@@ -518,8 +375,8 @@ function addServiceRow(serverId) {
     tr.querySelector('td:nth-child(2) input').focus();
 }
 
-function generateServiceRows(serverId) {
-    const input = document.getElementById(`serviceRowCount${serverId}`);
+function generateServiceRows() {
+    const input = document.getElementById('serviceRowCount');
     if (!input) return;
     
     const count = parseInt(input.value) || 3;
@@ -528,19 +385,15 @@ function generateServiceRows(serverId) {
         return;
     }
     
-    const tbodyId = `tbodyS${serverId}`;
-    const tbody = document.getElementById(tbodyId);
+    const tbody = document.getElementById('tbodyService');
     if (!tbody) return;
-    
-    // Clear existing rows first (optional - you can remove this if you want to append)
-    // tbody.innerHTML = '';
     
     for (let i = 0; i < count; i++) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, ${serverId})" title="Delete row">🗑️</button></td>
-            <td><input type="number" class="table-input" step="0.1" min="0" value="" placeholder="Time" onchange="calculateServiceTable(${serverId})" onblur="if(this.value !== '') calculateServiceTable(${serverId})"></td>
-            <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="" placeholder="Prob" onchange="calculateServiceTable(${serverId})" onblur="if(this.value !== '') calculateServiceTable(${serverId})"></td>
+            <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this)" title="Delete row">🗑️</button></td>
+            <td><input type="number" class="table-input" step="0.1" min="0" value="" placeholder="Time" onchange="calculateServiceTable()" onblur="if(this.value !== '') calculateServiceTable()"></td>
+            <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="" placeholder="Prob" onchange="calculateServiceTable()" onblur="if(this.value !== '') calculateServiceTable()"></td>
             <td class="calculated-cell">--</td>
             <td class="calculated-cell">--</td>
         `;
@@ -554,9 +407,8 @@ function generateServiceRows(serverId) {
     }
 }
 
-function deleteServiceRow(btn, serverId) {
-    const tbodyId = `tbodyS${serverId}`;
-    const tbody = document.getElementById(tbodyId);
+function deleteServiceRow(btn) {
+    const tbody = document.getElementById('tbodyService');
     if (!tbody) return;
     
     if (tbody.querySelectorAll('tr').length <= 1) {
@@ -564,33 +416,7 @@ function deleteServiceRow(btn, serverId) {
         return;
     }
     btn.closest('tr').remove();
-    calculateServiceTable(serverId);
-}
-
-function updateSpeedDetection() {
-    if (serverTables.length < 2) return;
-    if (serverTables.some(t => !t)) return;
-    
-    const serverAverages = serverTables.map((table, idx) => {
-        const dist = table.map(r => [r.time, r.prob]);
-        return {
-            id: idx,
-            avg: weightedAverage(dist),
-            name: `Server ${idx + 1}`
-        };
-    });
-    
-    serverAverages.sort((a, b) => a.avg - b.avg);
-    const faster = serverAverages[0].name;
-    const slower = serverAverages[serverAverages.length - 1].name;
-    const minAvg = serverAverages[0].avg.toFixed(3);
-    const maxAvg = serverAverages[serverAverages.length - 1].avg.toFixed(3);
-    
-    const speedDiv = document.getElementById('speedDetection');
-    if (speedDiv) {
-        speedDiv.innerHTML = `Detected: Faster = <strong>${faster}</strong> (avg=${minAvg}), Slower = <strong>${slower}</strong> (avg=${maxAvg})`;
-        speedDiv.classList.remove('hidden');
-    }
+    calculateServiceTable();
 }
 
 // ========== Random Number Management ==========
@@ -705,7 +531,6 @@ function runSimulationFromUI() {
         }
         
         const limitType = document.getElementById('limitType').value;
-        const preference = document.querySelector('input[name="preference"]:checked').value;
         
         // Ensure tables are calculated
         if (!arrivalTable) {
@@ -717,20 +542,10 @@ function runSimulationFromUI() {
             }
         }
         
-        // Check all server tables
-        const allTablesReady = serverTables.length === numServers && 
-                               serverTables.every(t => t !== null && t.length > 0);
-        
-        if (!allTablesReady) {
-            for (let i = 1; i <= numServers; i++) {
-                if (!serverTables[i - 1]) {
-                    calculateServiceTable(i);
-                }
-            }
-            
-            const stillNotReady = serverTables.some(t => !t || t.length === 0);
-            if (stillNotReady) {
-                alert(`Please fill in all ${numServers} service tables in Step 3 first.`);
+        if (!serviceTable) {
+            calculateServiceTable();
+            if (!serviceTable) {
+                alert('Please fill in the service table in Step 3 first.');
                 switchTab(2);
                 return;
             }
@@ -752,11 +567,9 @@ function runSimulationFromUI() {
             timeLimit, 
             limitType, 
             arrivalTable, 
-            serverTables, 
+            serviceTable, 
             arrRns, 
-            servRns, 
-            preference, 
-            numServers
+            servRns
         );
         
         populateResults(simData, timeLimit, limitType);
@@ -776,47 +589,57 @@ function populateResults(simData, timeLimit, limitType) {
     const n = results.length;
     
     // Calculate totals for performance measures
+    let totalInterarrival = 0;
     let totalService = 0;
     let totalWaiting = 0;
-    const serverServiceTime = new Array(numServers).fill(0); // Track service time per server
+    let totalTimeInSystem = 0;
+    let totalIdle = 0;
+    let numWaited = 0;
     
-    for (const row of results) {
+    for (let i = 0; i < n; i++) {
+        const row = results[i];
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${row.cust}</td>
-            <td>${row.rn_arr !== null ? row.rn_arr : '--'}</td>
-            <td>${row.arr_interval !== null ? row.arr_interval.toFixed(3) : '--'}</td>
-            <td>${row.arrival_time !== null ? row.arrival_time.toFixed(3) : '--'}</td>
-            <td>${row.server}</td>
-            <td>${row.server_name}</td>
-            <td>${row.rn_serv}</td>
-            <td>${row.service_time.toFixed(3)}</td>
-            <td>${row.start.toFixed(3)}</td>
-            <td>${row.wait.toFixed(3)}</td>
-            <td>${row.end.toFixed(3)}</td>
-        `;
-        tbody.appendChild(tr);
+        
+        // Calculate interarrival (skip first customer)
+        if (i > 0 && row.arr_interval !== null) {
+            totalInterarrival += row.arr_interval;
+        }
         
         // Calculate totals
         totalService += row.service_time;
         totalWaiting += row.wait;
+        if (row.wait > 0) numWaited++;
         
-        // Track service time per server (server is 1-indexed, so subtract 1 for array index)
-        const serverIdx = row.server - 1;
-        if (serverIdx >= 0 && serverIdx < numServers) {
-            serverServiceTime[serverIdx] += row.service_time;
+        // Calculate time in system (end - arrival_time)
+        const timeInSystem = row.arrival_time !== null ? row.end - row.arrival_time : row.service_time;
+        totalTimeInSystem += timeInSystem;
+        
+        // Calculate idle time (time between previous service end and current arrival)
+        let idleTime = 0;
+        if (i > 0) {
+            const prevEnd = results[i - 1].end;
+            const currArrival = row.arrival_time !== null ? row.arrival_time : 0;
+            if (currArrival > prevEnd) {
+                idleTime = currArrival - prevEnd;
+                totalIdle += idleTime;
+            }
         }
-    }
-    
-    // Display server speed info
-    const speedDiv = document.getElementById('speedInfo');
-    if (speedDiv && simData.serverAverages.length > 0) {
-        const faster = simData.serverAverages.find(s => s.id === simData.fasterId);
-        const slower = simData.serverAverages.find(s => s.id === simData.slowerId);
-        if (faster && slower) {
-            speedDiv.innerHTML = `Detected faster: <strong>Server ${faster.id + 1}</strong> (avg=${faster.avg}), slower: <strong>Server ${slower.id + 1}</strong> (avg=${slower.avg})`;
-            speedDiv.classList.remove('hidden');
-        }
+        
+        // Format interarrival time (show '—' for first customer)
+        const interarrival = i === 0 ? '—' : (row.arr_interval !== null ? row.arr_interval.toFixed(3) : '—');
+        
+        tr.innerHTML = `
+            <td>${row.cust}</td>
+            <td>${interarrival}</td>
+            <td>${row.arrival_time !== null ? row.arrival_time.toFixed(3) : '0.000'}</td>
+            <td>${row.service_time.toFixed(3)}</td>
+            <td>${row.start.toFixed(3)}</td>
+            <td>${row.end.toFixed(3)}</td>
+            <td>${row.wait.toFixed(3)}</td>
+            <td>${timeInSystem.toFixed(3)}</td>
+            <td>${idleTime.toFixed(3)}</td>
+        `;
+        tbody.appendChild(tr);
     }
     
     // Display time limit info
@@ -835,24 +658,22 @@ function populateResults(simData, timeLimit, limitType) {
     }
     
     // Calculate performance measures
-    const totalRunTime = results.length > 0 ? results[results.length - 1].end : 0;
-    calculatePerformanceMeasures(n, totalService, totalWaiting, totalRunTime, numServers, serverServiceTime);
+    calculatePerformanceMeasures(n, totalInterarrival, totalService, totalWaiting, totalTimeInSystem, totalIdle, numWaited, results);
 }
 
-function calculatePerformanceMeasures(n, totalService, totalWaiting, totalRunTime, numServers, serverServiceTime) {
+function calculatePerformanceMeasures(n, totalInterarrival, totalService, totalWaiting, totalTimeInSystem, totalIdle, numWaited, results) {
     const resultsDiv = document.getElementById('queueResults');
     if (!resultsDiv) return;
     
     // Calculate metrics
     const avgWaiting = totalWaiting / n;
-    const utilization = totalRunTime > 0 ? totalService / (numServers * totalRunTime) : 0;
-    
-    // Calculate individual server utilization
-    const serverUtilizations = [];
-    for (let i = 0; i < numServers; i++) {
-        const util = totalRunTime > 0 ? serverServiceTime[i] / totalRunTime : 0;
-        serverUtilizations.push(util);
-    }
+    const probWait = numWaited / n;
+    const totalRunTime = results.length > 0 ? results[results.length - 1].end : 0;
+    const probIdleServer = totalRunTime > 0 ? totalIdle / totalRunTime : 0;
+    const avgServiceTime = totalService / n;
+    const avgBetweenArrivals = n > 1 ? totalInterarrival / (n - 1) : 0;
+    const avgTimeInSystem = totalTimeInSystem / n;
+    const avgTimeThoseWhoWait = numWaited > 0 ? totalWaiting / numWaited : 0;
     
     // Build detailed step-by-step explanations
     let html = '<div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 2px solid #D2B48C;">';
@@ -867,28 +688,67 @@ function calculatePerformanceMeasures(n, totalService, totalWaiting, totalRunTim
     html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Average = ${totalWaiting.toFixed(2)} ÷ ${n} = <strong style="color: #8B4513; font-size: 1.1em;">${avgWaiting.toFixed(2)} minutes</strong></p>`;
     html += '</div>';
     
-    // 2. Overall Server Utilization
+    // 2. Probability (wait)
     html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
-    html += '<h4 style="color: #5C4033; margin-top: 0;">2. Overall Server Utilization</h4>';
-    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Utilization = Total service time ÷ (Number of servers × Total run time)</p>';
-    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Sum all service times from the simulation table = ${totalService.toFixed(2)} minutes</p>`;
-    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Number of servers = ${numServers}</p>`;
-    html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Total run time = Time when last service ends = ${totalRunTime.toFixed(2)} minutes</p>`;
-    html += `<p style="margin: 5px 0;"><strong>Step 4:</strong> Utilization = ${totalService.toFixed(2)} ÷ (${numServers} × ${totalRunTime.toFixed(2)}) = ${totalService.toFixed(2)} ÷ ${(numServers * totalRunTime).toFixed(2)} = <strong style="color: #8B4513; font-size: 1.1em;">${utilization.toFixed(4)}</strong> or <strong style="color: #8B4513; font-size: 1.1em;">${(utilization * 100).toFixed(2)}%</strong></p>`;
+    html += '<h4 style="color: #5C4033; margin-top: 0;">2. Probability (Wait)</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Probability (wait) = Number of customers who wait ÷ Total number of customers</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Count customers with waiting time > 0 = ${numWaited} customers</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Total number of customers = ${n}</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Probability = ${numWaited} ÷ ${n} = <strong style="color: #8B4513; font-size: 1.1em;">${probWait.toFixed(2)}</strong></p>`;
     html += '</div>';
     
-    // 3. Individual Server Utilization
+    // 3. Probability of idle server
     html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
-    html += '<h4 style="color: #5C4033; margin-top: 0;">3. Individual Server Utilization</h4>';
-    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Server Utilization = Total service time for that server ÷ Total run time</p>';
-    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Total run time = Time when last service ends = ${totalRunTime.toFixed(2)} minutes</p>`;
+    html += '<h4 style="color: #5C4033; margin-top: 0;">3. Probability of Idle Server</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Probability of idle server = Total idle time ÷ Total run time of simulation</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Sum all idle times from the simulation table = ${totalIdle.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Total run time = Time when last service ends = ${totalRunTime.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Probability = ${totalIdle.toFixed(2)} ÷ ${totalRunTime.toFixed(2)} = <strong style="color: #8B4513; font-size: 1.1em;">${probIdleServer.toFixed(2)}</strong></p>`;
+    html += '</div>';
     
-    for (let i = 0; i < numServers; i++) {
-        const serverNum = i + 1;
-        html += `<p style="margin: 5px 0;"><strong>Server ${serverNum}:</strong></p>`;
-        html += `<p style="margin: 5px 0; padding-left: 20px;">- Total service time for Server ${serverNum} = ${serverServiceTime[i].toFixed(2)} minutes</p>`;
-        html += `<p style="margin: 5px 0; padding-left: 20px;">- Utilization = ${serverServiceTime[i].toFixed(2)} ÷ ${totalRunTime.toFixed(2)} = <strong style="color: #8B4513; font-size: 1.1em;">${serverUtilizations[i].toFixed(4)}</strong> or <strong style="color: #8B4513; font-size: 1.1em;">${(serverUtilizations[i] * 100).toFixed(2)}%</strong></p>`;
+    // 4. Average service time
+    html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
+    html += '<h4 style="color: #5C4033; margin-top: 0;">4. Average Service Time (minutes)</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Average service time = Total service time ÷ Total number of customers</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Sum all service times from the simulation table = ${totalService.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Total number of customers = ${n}</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Average = ${totalService.toFixed(2)} ÷ ${n} = <strong style="color: #8B4513; font-size: 1.1em;">${avgServiceTime.toFixed(2)} minutes</strong></p>`;
+    html += '</div>';
+    
+    // 5. Average time between arrivals
+    html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
+    html += '<h4 style="color: #5C4033; margin-top: 0;">5. Average Time Between Arrivals (minutes)</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Average time between arrivals = Sum of interarrival times ÷ (Number of arrivals - 1)</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Sum all interarrival times (excluding first customer) = ${totalInterarrival.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Number of arrivals - 1 = ${n} - 1 = ${n - 1}</p>`;
+    if (n > 1) {
+        html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Average = ${totalInterarrival.toFixed(2)} ÷ ${n - 1} = <strong style="color: #8B4513; font-size: 1.1em;">${avgBetweenArrivals.toFixed(2)} minutes</strong></p>`;
+    } else {
+        html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Only one customer, so average = <strong style="color: #8B4513; font-size: 1.1em;">0 minutes</strong></p>`;
     }
+    html += '</div>';
+    
+    // 6. Average waiting time of those who wait
+    html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
+    html += '<h4 style="color: #5C4033; margin-top: 0;">6. Average Waiting Time of Those Who Wait (minutes)</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Average waiting time (those who wait) = Total waiting time ÷ Number of customers who wait</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Sum all waiting times = ${totalWaiting.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Number of customers who wait = ${numWaited}</p>`;
+    if (numWaited > 0) {
+        html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Average = ${totalWaiting.toFixed(2)} ÷ ${numWaited} = <strong style="color: #8B4513; font-size: 1.1em;">${avgTimeThoseWhoWait.toFixed(2)} minutes</strong></p>`;
+    } else {
+        html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> No customers waited, so average = <strong style="color: #8B4513; font-size: 1.1em;">0 minutes</strong></p>`;
+    }
+    html += '</div>';
+    
+    // 7. Average time customer spends in the system
+    html += '<div style="margin-bottom: 25px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #8B4513;">';
+    html += '<h4 style="color: #5C4033; margin-top: 0;">7. Average Time Customer Spends in the System (minutes)</h4>';
+    html += '<p style="margin: 5px 0;"><strong>Formula:</strong> Average time in system = Total time in system ÷ Total number of customers</p>';
+    html += `<p style="margin: 5px 0;"><strong>Step 1:</strong> Sum all "Time in System" values from the simulation table = ${totalTimeInSystem.toFixed(2)} minutes</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 2:</strong> Total number of customers = ${n}</p>`;
+    html += `<p style="margin: 5px 0;"><strong>Step 3:</strong> Average = ${totalTimeInSystem.toFixed(2)} ÷ ${n} = <strong style="color: #8B4513; font-size: 1.1em;">${avgTimeInSystem.toFixed(2)} minutes</strong></p>`;
+    html += '<p style="margin: 5px 0; font-style: italic; color: #666;"><strong>Note:</strong> This can also be calculated as: Average waiting time + Average service time = ' + avgWaiting.toFixed(2) + ' + ' + avgServiceTime.toFixed(2) + ' = ' + avgTimeInSystem.toFixed(2) + ' minutes</p>';
     html += '</div>';
     
     // Summary box
@@ -896,10 +756,12 @@ function calculatePerformanceMeasures(n, totalService, totalWaiting, totalRunTim
     html += '<h3 style="color: #5C4033; margin-top: 0; text-align: center;">Summary of Results</h3>';
     html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px;">';
     html += `<div><strong>Average waiting time:</strong> ${avgWaiting.toFixed(2)} minutes</div>`;
-    html += `<div><strong>Overall server utilization:</strong> ${utilization.toFixed(4)} (${(utilization * 100).toFixed(2)}%)</div>`;
-    for (let i = 0; i < numServers; i++) {
-        html += `<div><strong>Server ${i + 1} utilization:</strong> ${serverUtilizations[i].toFixed(4)} (${(serverUtilizations[i] * 100).toFixed(2)}%)</div>`;
-    }
+    html += `<div><strong>Probability (wait):</strong> ${probWait.toFixed(2)}</div>`;
+    html += `<div><strong>Probability of idle server:</strong> ${probIdleServer.toFixed(2)}</div>`;
+    html += `<div><strong>Average service time:</strong> ${avgServiceTime.toFixed(2)} minutes</div>`;
+    html += `<div><strong>Average time between arrivals:</strong> ${avgBetweenArrivals.toFixed(2)} minutes</div>`;
+    html += `<div><strong>Average waiting (those who wait):</strong> ${avgTimeThoseWhoWait.toFixed(2)} minutes</div>`;
+    html += `<div><strong>Average time in system:</strong> ${avgTimeInSystem.toFixed(2)} minutes</div>`;
     html += '</div>';
     html += '</div>';
     
@@ -927,9 +789,6 @@ function clearResults() {
     if (tbody) tbody.innerHTML = '';
     if (resultsDiv) resultsDiv.innerHTML = '';
     
-    const speedDiv = document.getElementById('speedInfo');
-    if (speedDiv) speedDiv.classList.add('hidden');
-    
     const timeLimitDiv = document.getElementById('timeLimitInfo');
     if (timeLimitDiv) timeLimitDiv.classList.add('hidden');
     
@@ -949,7 +808,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Silently ignore
         }
         
-        // Initialize server tables will be done by updateServerCount
-        updateServerCount();
+        try {
+            const serviceDist = readDistributionFromTable('tbodyService');
+            if (serviceDist.length > 0) {
+                calculateServiceTable();
+            }
+        } catch (e) {
+            // Silently ignore
+        }
     }, 100);
 });
+

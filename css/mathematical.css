@@ -1,52 +1,257 @@
-.calc-section {
-    background: white;
-    padding: 20px;
-    margin: 20px 0;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+/* ========== Mathematical Queuing Theory Styles ========== */
+
+/* Results container styling */
+.results-container {
+    margin-top: 30px;
 }
 
-.calc-section h2 {
+.results-container h3 {
+    color: #5C4033;
+    margin-top: 0;
+    border-bottom: 2px solid #8B4513;
+    padding-bottom: 10px;
+}
+
+.results-container h4 {
     color: #5C4033;
     margin-top: 0;
 }
 
+.results-container p {
+    color: #6B4423;
+    margin: 5px 0;
+    line-height: 1.6;
+}
+
+.results-container ul {
+    color: #6B4423;
+    line-height: 1.8;
+}
+
+.results-container li {
+    margin: 5px 0;
+}
+
+/* Input group enhancements for mathematical page */
 .input-group {
-    margin: 15px 0;
-    text-align: left;
+    background: #F5E6D3;
+    padding: 20px;
+    border-radius: 8px;
+    border: 2px solid #D2B48C;
 }
 
 .input-group label {
     display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
-.input-group input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px;
-    box-sizing: border-box;
-}
-
-.result {
-    margin-top: 15px;
-    padding: 15px;
-    background: #e8f5e9;
-    border-radius: 4px;
-    font-size: 18px;
+    margin-bottom: 8px;
     font-weight: bold;
     color: #5C4033;
+    font-size: 16px;
+}
+
+.input-group input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #D2B48C;
+    border-radius: 6px;
+    font-size: 15px;
+    font-family: 'Courier New', monospace;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.input-group input[type="number"]:focus {
+    outline: none;
+    border-color: #8B4513;
+    box-shadow: 0 0 8px rgba(139, 69, 19, 0.3);
+}
+
+.input-group small {
+    display: block;
+    margin-top: 5px;
+    color: #6B4423;
+    font-size: 13px;
+    font-style: italic;
+}
+
+/* Radio group styling */
+.radio-group {
+    margin: 20px 0;
+    padding: 20px;
+    background: #F5E6D3;
+    border-radius: 8px;
+    border: 2px solid #D2B48C;
+}
+
+.radio-group label {
+    display: block;
+    margin: 12px 0;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    color: #5C4033;
+    font-weight: 500;
+}
+
+.radio-group label:hover {
+    background: rgba(139, 69, 19, 0.1);
+}
+
+.radio-group input[type="radio"] {
+    margin-right: 10px;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    accent-color: #8B4513;
+}
+
+/* Tab navigation styling */
+.tabs-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 30px 0;
+    border-bottom: 3px solid #8B4513;
+    padding-bottom: 10px;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.tab-btn {
+    padding: 12px 20px;
+    background: #D2B48C;
+    color: #5C4033;
+    border: 2px solid #8B4513;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 150px;
+    box-shadow: 0 2px 4px rgba(139, 69, 19, 0.2);
+}
+
+.tab-btn:hover {
+    background: #CD853F;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(139, 69, 19, 0.3);
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+    color: white;
+    border-bottom: 3px solid #8B4513;
+    position: relative;
+    bottom: -3px;
+    box-shadow: 0 4px 8px rgba(139, 69, 19, 0.4);
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tab-body {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(139, 69, 19, 0.2);
+    margin-top: 20px;
+}
+
+.tab-body h2 {
+    color: #5C4033;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+    border-bottom: 3px solid #8B4513;
+    padding-bottom: 10px;
+    text-align: center;
+}
+
+.tab-body p {
+    color: #6B4423;
+    margin-bottom: 20px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+/* Button styling */
+.btn-primary {
+    background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+    color: white;
+    font-weight: bold;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(139, 69, 19, 0.3);
+    margin: 10px 5px;
+    width: 100%;
+    display: block;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #6B3410 0%, #8B4513 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(139, 69, 19, 0.4);
 }
 
 .back-btn {
-    background: #6B4423;
+    width: auto;
+    padding: 12px 25px;
     margin-bottom: 20px;
+    font-size: 16px;
+    text-transform: none;
+    letter-spacing: 0;
+    display: inline-block;
 }
 
-.back-btn:hover {
-    background: #5C4033;
+/* Responsive design */
+@media (max-width: 768px) {
+    .tabs-nav {
+        flex-direction: column;
+    }
+    
+    .tab-btn {
+        width: 100%;
+        border-radius: 8px;
+        margin-bottom: 5px;
+    }
+    
+    .tab-btn.active {
+        bottom: 0;
+    }
+    
+    .tab-body {
+        padding: 20px 15px;
+    }
+    
+    .container {
+        width: 98% !important;
+        padding: 20px !important;
+    }
 }
 
