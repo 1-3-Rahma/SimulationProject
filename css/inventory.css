@@ -1,0 +1,198 @@
+/* Inventory-specific styles that extend main.css and simulation.css */
+
+.section {
+    margin-bottom: 30px;
+}
+
+.section h2 {
+    color: #5C4033;
+    margin: 25px 0 15px;
+    border-bottom: 3px solid #8B4513;
+    padding-bottom: 10px;
+    font-size: 1.8em;
+}
+
+.input-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.random-numbers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.random-input {
+    padding: 8px;
+    border: 2px solid #D2B48C;
+    border-radius: 4px;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    transition: all 0.3s ease;
+}
+
+.random-input:focus {
+    outline: none;
+    border-color: #8B4513;
+    box-shadow: 0 0 5px rgba(139, 69, 19, 0.3);
+}
+
+.pending-orders-container {
+    margin: 20px 0;
+    padding: 20px;
+    background: #F5E6D3;
+    border-radius: 8px;
+    border: 2px solid #D2B48C;
+}
+
+.pending-order-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.pending-order-row label {
+    color: #5C4033;
+    font-weight: bold;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.nav-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.simulation-table-container {
+    overflow-x: auto;
+    margin: 20px 0;
+}
+
+/* Style all tables in inventory page to match project theme */
+#demandTable,
+#leadTimeTable,
+#simulationTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background: white;
+}
+
+#demandTable thead,
+#leadTimeTable thead,
+#simulationTable thead {
+    background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+    color: white;
+}
+
+#demandTable th,
+#leadTimeTable th,
+#simulationTable th {
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    border: 1px solid #6B3410;
+}
+
+#demandTable td,
+#leadTimeTable td,
+#simulationTable td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #D2B48C;
+}
+
+#demandTable tbody tr:nth-child(even),
+#leadTimeTable tbody tr:nth-child(even),
+#simulationTable tbody tr:nth-child(even) {
+    background: #F5E6D3;
+}
+
+#demandTable tbody tr:hover,
+#leadTimeTable tbody tr:hover,
+#simulationTable tbody tr:hover {
+    background: #E6D5C3;
+}
+
+/* Input fields inside tables */
+#demandTable input[type="number"],
+#leadTimeTable input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #D2B48C;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    box-sizing: border-box;
+}
+
+#demandTable input[type="number"]:focus,
+#leadTimeTable input[type="number"]:focus {
+    outline: none;
+    border-color: #8B4513;
+    box-shadow: 0 0 5px rgba(139, 69, 19, 0.3);
+}
+
+.table-controls {
+    margin: 10px 0;
+}
+
+.error {
+    color: #8B0000;
+    font-weight: 600;
+    margin: 10px 0;
+    padding: 10px;
+    background: #FFE4E1;
+    border-left: 4px solid #8B0000;
+    border-radius: 4px;
+}
+
+.success {
+    color: #006400;
+    font-weight: 600;
+    margin: 10px 0;
+    padding: 10px;
+    background: #E6FFE6;
+    border-left: 4px solid #006400;
+    border-radius: 4px;
+}
+
+/* Override container for inventory page */
+.inventory-container {
+    max-width: 1400px !important;
+    width: 95% !important;
+    text-align: left !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .input-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .random-numbers-grid {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    }
+    
+    .pending-order-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .nav-buttons {
+        flex-direction: column;
+    }
+    
+    .nav-buttons .btn {
+        width: 100%;
+    }
+}

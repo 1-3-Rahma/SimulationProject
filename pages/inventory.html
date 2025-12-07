@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Queue Simulation</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/simulation.css">
+    <link rel="stylesheet" href="../css/inventory.css">
+</head>
+<body>
+    <div class="container inventory-container">
+        <button class="btn back-btn" onclick="window.location.href='home.html'">← Back to Main Menu</button>
+        <h1>📦 Inventory Queue Simulation</h1>
+
+        <!-- Step 1: Basic Inputs -->
+        <div id="step1" class="section">
+            <h2>Step 1: Basic Parameters</h2>
+            <div class="input-grid">
+                <div class="input-group">
+                    <label>Standard Inventory Level (M):</label>
+                    <input type="number" id="stdInventory" value="100" min="0">
+                </div>
+                <div class="input-group">
+                    <label>Periodic Review Length (N days):</label>
+                    <input type="number" id="reviewLength" value="5" min="1">
+                </div>
+                <div class="input-group">
+                    <label>Number of Cycles:</label>
+                    <input type="number" id="numCycles" value="3" min="1">
+                </div>
+                <div class="input-group">
+                    <label>Starting Inventory:</label>
+                    <input type="number" id="startInventory" value="80" min="0">
+                </div>
+            </div>
+            
+            <h2>Pending Orders</h2>
+            <div class="pending-orders-container">
+                <div id="pendingOrdersList"></div>
+                <button class="btn btn-secondary" onclick="addPendingOrder()">+ Add Pending Order</button>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn" onclick="goToStep(2)">Next: Setup Tables</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Demand and Lead Time Tables -->
+        <div id="step2" class="section hidden">
+            <h2>Step 2: Demand Distribution</h2>
+            <div class="table-controls">
+                <button class="btn btn-secondary" onclick="addDemandRow()">+ Add Row</button>
+            </div>
+            <table id="demandTable">
+                <thead>
+                    <tr>
+                        <th>Demand</th>
+                        <th>Probability</th>
+                        <th>Cumulative Probability</th>
+                        <th>Random-Digit Assignment</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="demandTableBody"></tbody>
+            </table>
+
+            <h2>Lead Time Distribution</h2>
+            <div class="table-controls">
+                <button class="btn btn-secondary" onclick="addLeadTimeRow()">+ Add Row</button>
+            </div>
+            <table id="leadTimeTable">
+                <thead>
+                    <tr>
+                        <th>Lead Time (days)</th>
+                        <th>Probability</th>
+                        <th>Cumulative Probability</th>
+                        <th>Random-Digit Assignment</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="leadTimeTableBody"></tbody>
+            </table>
+
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" onclick="goToStep(1)">Back</button>
+                <button class="btn" onclick="goToStep(3)">Next: Random Numbers</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Random Numbers -->
+        <div id="step3" class="section hidden">
+            <h2>Step 3: Random Numbers</h2>
+            <div class="input-grid">
+                <div class="input-group">
+                    <label>Number of Demand Random Numbers:</label>
+                    <input type="number" id="numDemandRandoms" value="15" min="1">
+                </div>
+                <div class="input-group">
+                    <label>Number of Lead Time Random Numbers:</label>
+                    <input type="number" id="numLeadTimeRandoms" value="5" min="1">
+                </div>
+            </div>
+            <button class="btn" onclick="generateRandomInputs()">Generate Input Fields</button>
+
+            <h2>Demand Random Numbers</h2>
+            <div id="demandRandoms" class="random-numbers-grid"></div>
+
+            <h2>Lead Time Random Numbers</h2>
+            <div id="leadTimeRandoms" class="random-numbers-grid"></div>
+
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" onclick="goToStep(2)">Back</button>
+                <button class="btn btn-primary" onclick="runSimulation()">Run Simulation</button>
+            </div>
+        </div>
+
+        <!-- Step 4: Simulation Results -->
+        <div id="step4" class="section hidden">
+            <h2>Step 4: Simulation Results</h2>
+            <div class="simulation-table-container">
+                <table id="simulationTable">
+                    <thead>
+                        <tr>
+                            <th>Cycle</th>
+                            <th>Day</th>
+                            <th>Beginning Inventory</th>
+                            <th>Random Digit (Demand)</th>
+                            <th>Demand</th>
+                            <th>Ending Inventory</th>
+                            <th>Shortage Quantity</th>
+                            <th>Order Quantity</th>
+                            <th>Random Digit (Lead Time)</th>
+                            <th>Days Until Arrival</th>
+                        </tr>
+                    </thead>
+                    <tbody id="simulationTableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" onclick="goToStep(3)">Back</button>
+                <button class="btn" onclick="goToStep(1)">Start Over</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/inventory.js"></script>
+</body>
+</html>
+

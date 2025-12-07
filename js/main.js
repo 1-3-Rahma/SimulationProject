@@ -36,7 +36,7 @@ function selectOption(type) {
     }
 
     if (type === "inventory") {
-        alert("Redirect to inventory page (later)");
+        window.location.href = "inventory.html";
         return;
     }
 
