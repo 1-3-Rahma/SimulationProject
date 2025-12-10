@@ -78,6 +78,18 @@ function buildCumulativeIntervals(dist, scale = 100) {
     return table;
 }
 
+// Ensure cumulative probability sums to exactly 1 (within small tolerance)
+function validateTotalProbability(dist, label, silent = false) {
+    const total = dist.reduce((sum, [_, p]) => sum + p, 0);
+    if (Math.abs(total - 1) > 1e-6) {
+        if (!silent) {
+            alert(`${label} probabilities must sum to 1. Current total = ${total.toFixed(4)}. Please adjust the probabilities.`);
+        }
+        return { ok: false, total };
+    }
+    return { ok: true, total };
+}
+
 function mapRandomToTime(rn, table) {
     // Convert rn to number and handle 0 as max scale value
     let digit = parseFloat(rn);
@@ -123,6 +135,18 @@ function switchTab(tabIdx) {
 }
 
 function nextTab(tabIdx) {
+    // Prevent moving forward when cumulative probability exceeds 1
+    if (tabIdx > currentTab) {
+        if (currentTab === 1) { // leaving interarrival step
+            const dist = readDistributionFromTable('tbodyArrival');
+            const { ok } = validateTotalProbability(dist, 'Interarrival');
+            if (!ok) return;
+        } else if (currentTab === 2) { // leaving service step
+            const dist = readDistributionFromTable('tbodyService');
+            const { ok } = validateTotalProbability(dist, 'Service');
+            if (!ok) return;
+        }
+    }
     switchTab(tabIdx);
 }
 
@@ -189,8 +213,6 @@ function calculateArrivalTable() {
                 return;
             }
 
-        const total = dist.reduce((sum, [_, p]) => sum + p, 0);
-        
         // Automatically determine scale from probability decimal places
         const scale = determineScaleFromProbabilities(dist);
         const numDigits = Math.ceil(Math.log10(scale));
@@ -307,8 +329,6 @@ function calculateServiceTable() {
         return;
     }
 
-        const total = dist.reduce((sum, [_, p]) => sum + p, 0);
-        
         // Automatically determine scale from probability decimal places
         const scale = determineScaleFromProbabilities(dist);
         const numDigits = Math.ceil(Math.log10(scale));
@@ -510,6 +530,13 @@ function runSimulationFromUI() {
                 return;
             }
         }
+        // Validate arrival sum exactly 1 before proceeding
+        const arrivalDistCheck = readDistributionFromTable('tbodyArrival');
+        const { ok: arrOk } = validateTotalProbability(arrivalDistCheck, 'Interarrival');
+        if (!arrOk) {
+            switchTab(1);
+            return;
+        }
         
         if (!serviceTable) {
             calculateServiceTable();
@@ -518,6 +545,13 @@ function runSimulationFromUI() {
                 switchTab(2);
                 return;
             }
+        }
+        // Validate service sum exactly 1 before proceeding
+        const serviceDistCheck = readDistributionFromTable('tbodyService');
+        const { ok: servOk } = validateTotalProbability(serviceDistCheck, 'Service');
+        if (!servOk) {
+            switchTab(2);
+            return;
         }
         
         // Read random numbers from table cells

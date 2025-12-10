@@ -54,6 +54,18 @@ function buildCumulativeIntervals(dist) {
     return table;
 }
 
+// Ensure cumulative probability sums to exactly 1 (within small tolerance)
+function validateTotalProbability(dist, label, silent = false) {
+    const total = dist.reduce((sum, [_, p]) => sum + p, 0);
+    if (Math.abs(total - 1) > 1e-6) {
+        if (!silent) {
+            alert(`${label} probabilities must sum to 1. Current total = ${total.toFixed(4)}. Please adjust the probabilities.`);
+        }
+        return { ok: false, total };
+    }
+    return { ok: true, total };
+}
+
 function mapRandomToTime(rn, table) {
     if (rn < 1 || rn > 100) throw new Error("Random numbers must be in the range 1..100.");
     for (const row of table) {
@@ -189,6 +201,21 @@ function switchTab(tabIdx) {
 }
 
 function nextTab(tabIdx) {
+    // Prevent moving forward when any cumulative probability exceeds 1
+    if (tabIdx > currentTab) {
+        if (currentTab === 1) { // leaving interarrival step
+            const dist = readDistributionFromTable('tbodyArrival');
+            const { ok } = validateTotalProbability(dist, 'Interarrival');
+            if (!ok) return;
+        } else if (currentTab === 2) { // leaving service step
+            const dist1 = readDistributionFromTable('tbodyS1');
+            const dist2 = readDistributionFromTable('tbodyS2');
+            const { ok: ok1 } = validateTotalProbability(dist1, 'Service (Server 1)');
+            if (!ok1) return;
+            const { ok: ok2 } = validateTotalProbability(dist2, 'Service (Server 2)');
+            if (!ok2) return;
+        }
+    }
     switchTab(tabIdx);
 }
 
@@ -255,8 +282,6 @@ function calculateArrivalTable() {
             }
             return;
         }
-        
-        const total = dist.reduce((sum, [_, p]) => sum + p, 0);
         
         const table = buildCumulativeIntervals(dist);
         arrivalTable = table;
@@ -369,8 +394,6 @@ function calculateServiceTable(serverId) {
             }
             return;
         }
-        
-        const total = dist.reduce((sum, [_, p]) => sum + p, 0);
         
         const table = buildCumulativeIntervals(dist);
         
@@ -618,6 +641,13 @@ function runSimulationFromUI() {
                 return;
             }
         }
+        // Validate arrival sum exactly 1 before proceeding
+        const arrivalDistCheck = readDistributionFromTable('tbodyArrival');
+        const { ok: arrOk } = validateTotalProbability(arrivalDistCheck, 'Interarrival');
+        if (!arrOk) {
+            switchTab(1);
+            return;
+        }
         
         if (!s1Table || !s2Table) {
             if (!s1Table) calculateServiceTable(1);
@@ -628,6 +658,19 @@ function runSimulationFromUI() {
                 switchTab(2);
                 return;
             }
+        }
+        // Validate both service sums exactly 1 before proceeding
+        const serviceDistCheck1 = readDistributionFromTable('tbodyS1');
+        const serviceDistCheck2 = readDistributionFromTable('tbodyS2');
+        const { ok: servOk1 } = validateTotalProbability(serviceDistCheck1, 'Service (Server 1)');
+        if (!servOk1) {
+            switchTab(2);
+            return;
+        }
+        const { ok: servOk2 } = validateTotalProbability(serviceDistCheck2, 'Service (Server 2)');
+        if (!servOk2) {
+            switchTab(2);
+            return;
         }
         
         // Read random numbers from table cells
