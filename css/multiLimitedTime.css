@@ -848,58 +848,42 @@ textarea {
     }
 }
 
-/* ========== Print Styles ========== */
-@media print {
-    .tabs-nav,
-    .button-group,
-    .back-btn,
-    .table-controls,
-    .btn-delete,
-    .btn-add,
-    .btn-delete-row,
-    .btn-add-row {
-        display: none !important;
-    }
-    
-    .tab-content {
-        display: block !important;
-    }
-    
-    .tab-body {
-        box-shadow: none;
-        border: 1px solid #000;
-        page-break-inside: avoid;
-    }
-    
-    .table-container {
-        page-break-inside: avoid;
-    }
-    
-    .results-table,
-    .editable-table {
-        page-break-inside: auto;
-    }
-    
-    .results-table tr,
-    .editable-table tr {
-        page-break-inside: avoid;
-        page-break-after: auto;
-    }
-    
-    .results-table thead {
-        display: table-header-group;
-    }
-    
-    .results-table tbody {
-        display: table-row-group;
-    }
-    
-    body {
-        background: white !important;
-    }
-    
-    .container {
-        max-width: 100% !important;
-        box-shadow: none !important;
-    }
+.pdf-mode .tabs-nav,
+.pdf-mode .button-group,
+.pdf-mode .back-btn,
+.pdf-mode .table-controls,
+.pdf-mode .btn-delete,
+.pdf-mode .btn-add,
+.pdf-mode .btn-delete-row,
+.pdf-mode .btn-add-row {
+    display: none !important;
+}
+
+.pdf-mode .tab-content {
+    display: block !important;
+}
+
+.pdf-mode .tab-body {
+    box-shadow: none;
+    border: 1px solid #000;
+}
+
+.pdf-mode .table-container {
+    overflow: visible !important;
+}
+
+.pdf-mode body {
+    background: white !important;
+}
+
+.pdf-mode .container {
+    max-width: 100% !important;
+    box-shadow: none !important;
+}
+.pdf-mode .scrollable {
+    overflow: visible !important;
+    max-height: none !important;
+}
+.pdf-mode .alert.hidden {
+    display: block !important;
 }

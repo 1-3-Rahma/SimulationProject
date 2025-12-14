@@ -330,51 +330,61 @@
             </div>
 </div>
 
-        <!-- TAB 5: Results -->
-        <div id="tab4" class="tab-content">
-            <div class="tab-body">
-                <h2>Step 5: Simulation Results</h2>
-                
-                <div id="speedInfo" class="alert hidden"></div>
-                <div id="timeLimitInfo" class="alert"></div>
-                
-                <!-- Distribution Tables Section -->
-                <div id="distributionTables" style="margin-bottom: 30px;"></div>
+       <!-- TAB 5: Results -->
+<div id="tab4" class="tab-content">
+    <div class="tab-body">
+        <h2>Step 5: Simulation Results</h2>
 
-                <div class="table-container scrollable">
-                    <table id="tableResults" class="results-table">
-                        <thead>
-                            <tr>
-                                <th>Cust</th>
-                                <th>RN(Arr)</th>
-                                <th>ArrInt</th>
-                                <th>ArrTime</th>
-                                <th>Server</th>
-                                <th>ServerName</th>
-                                <th>RN(Serv)</th>
-                                <th>ServTime</th>
-                                <th>Start</th>
-                                <th>Wait</th>
-                                <th>End</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
+        <!-- ✅ INCLUDED IN PDF -->
+        <div id="report">
 
-                <div id="resultsSection" style="margin-top: 30px;">
-                    <h2>Performance Measures</h2>
-                    <div id="queueResults" class="result"></div>
-                </div>
+            <div id="speedInfo" class="alert hidden"></div>
+            <div id="timeLimitInfo" class="alert"></div>
 
-                <div class="button-group">
-                    <button class="btn btn-secondary" onclick="clearResults()">Clear Results</button>
-                    <button class="btn btn-primary" onclick="printToPDF()">Print to PDF</button>
-                    <button class="btn btn-secondary" onclick="switchTab(0)">Back to Step 1</button>
-                </div>
+            <!-- Distribution Tables Section -->
+            <div id="distributionTables" style="margin-bottom: 30px;"></div>
+
+            <div class="table-container scrollable">
+                <table id="tableResults" class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Cust</th>
+                            <th>RN(Arr)</th>
+                            <th>ArrInt</th>
+                            <th>ArrTime</th>
+                            <th>Server</th>
+                            <th>ServerName</th>
+                            <th>RN(Serv)</th>
+                            <th>ServTime</th>
+                            <th>Start</th>
+                            <th>Wait</th>
+                            <th>End</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
+
+            <div id="resultsSection" style="margin-top: 30px;">
+                <h2>Performance Measures</h2>
+                <div id="queueResults" class="result"></div>
+            </div>
+
+        </div> <!-- END REPORT -->
+
+        <div class="button-group">
+            <button class="btn btn-secondary" onclick="clearResults()">Clear Results</button>
+            <button class="btn btn-primary" onclick="downloadPDF()">Download as PDF</button>
+            <button class="btn btn-secondary" onclick="switchTab(0)">Back to Step 1</button>
         </div>
+    </div>
 </div>
+
+</div>
+
+       <!-- for download pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script src="../../js/randomNumbers.js"></script>
     <script src="../../js/multipleServer/multiLimitedTime.js"></script>

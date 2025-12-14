@@ -861,9 +861,42 @@ function displayDistributionTables() {
     distDiv.innerHTML = html;
 }
 
-function printToPDF() {
-    window.print();
+async function downloadPDF() {
+    document.body.classList.add("pdf-mode");
+
+    const { jsPDF } = window.jspdf;
+    const report = document.getElementById("report");
+
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const canvas = await html2canvas(report, {
+        scale: 2
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
+        heightLeft -= pageHeight;
+    }
+
+    pdf.save("SingleServer_LimitedCusomers_Report.pdf");
+
+    document.body.classList.remove("pdf-mode");
 }
+
 
 function clearResults() {
     const tbody = document.querySelector('#tableResults tbody');
