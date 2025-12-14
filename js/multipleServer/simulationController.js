@@ -76,7 +76,7 @@ function loadTableData() {
     } else {
         // Reconstruct from previous page (would need to go back and get it)
         alert('Table data not found. Please go back and calculate tables first.');
-        window.location.href = '../home.html';
+        window.location.href = '../../mainPage/home.html';
     }
 }
 

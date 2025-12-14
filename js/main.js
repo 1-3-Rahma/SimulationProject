@@ -21,7 +21,7 @@ function selectOption(type) {
     selectedOptions.mainType = type;
 
     if (type === "math") {
-        window.location.href = "pages/mathematical.html";
+        window.location.href = "../pages/mathematical.html";
         return;
     }
 
@@ -36,7 +36,7 @@ function selectOption(type) {
     }
 
     if (type === "inventory") {
-        window.location.href = "pages/inventory.html";
+        window.location.href = "../pages/inventory.html";
         return;
     }
 
@@ -59,27 +59,27 @@ function chooseSub(choice) {
     // Single Server Cases
     if (choice === "single-customers") {
         sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
-        window.location.href = "pages/single/singleLimitedCustomer.html";
+        window.location.href = "../pages/single/singleLimitedCustomer.html";
         return;
     }
 
     if (choice === "single-time") {
         sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
-        window.location.href = "pages/single/singleLimitedTime.html";
+        window.location.href = "../pages/single/singleLimitedTime.html";
         return;
     }
 
     // Multiple Server Cases
     if (choice === "multi-customers") {
         sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
-        window.location.href = "pages/multiple/multiLimitedCustomer.html";
+        window.location.href = "../pages/multiple/multiLimitedCustomer.html";
         return;
     }
 
     // Case: Limited by Time → direct navigation (same flow as customer-limited)
     if (choice === "multi-time") {
         sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
-        window.location.href = "pages/multiple/multiLimitedTime.html";
+        window.location.href = "../pages/multiple/multiLimitedTime.html";
         return;
     }
 
