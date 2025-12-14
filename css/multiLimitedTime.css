@@ -855,8 +855,10 @@ textarea {
     .back-btn,
     .table-controls,
     .btn-delete,
-    .btn-add {
-        display: none;
+    .btn-add,
+    .btn-delete-row,
+    .btn-add-row {
+        display: none !important;
     }
     
     .tab-content {
@@ -866,5 +868,38 @@ textarea {
     .tab-body {
         box-shadow: none;
         border: 1px solid #000;
+        page-break-inside: avoid;
+    }
+    
+    .table-container {
+        page-break-inside: avoid;
+    }
+    
+    .results-table,
+    .editable-table {
+        page-break-inside: auto;
+    }
+    
+    .results-table tr,
+    .editable-table tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+    
+    .results-table thead {
+        display: table-header-group;
+    }
+    
+    .results-table tbody {
+        display: table-row-group;
+    }
+    
+    body {
+        background: white !important;
+    }
+    
+    .container {
+        max-width: 100% !important;
+        box-shadow: none !important;
     }
 }

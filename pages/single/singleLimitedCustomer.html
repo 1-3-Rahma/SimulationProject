@@ -13,7 +13,7 @@
 </head>
 <body>
     <div class="container">
-        <button class="btn back-btn" onclick="window.location.replace('../home.html')">← Back to Main Menu</button>
+        <button class="btn back-btn" onclick="window.location.href='../../home.html'">← Back to Main Menu</button>
         
         <h1>Single Server - Limited Customers</h1>
 
@@ -349,6 +349,9 @@
             <div class="tab-body">
                 <h2>Step 5: Simulation Results</h2>
                 
+                <!-- Distribution Tables Section -->
+                <div id="distributionTables" style="margin-bottom: 30px;"></div>
+                
                 <div class="table-container scrollable">
                     <table id="tableResults" class="results-table">
                         <thead>
@@ -375,6 +378,7 @@
 
                 <div class="button-group">
                     <button class="btn btn-secondary" onclick="clearResults()">Clear Results</button>
+                    <button class="btn btn-primary" onclick="printToPDF()">Print to PDF</button>
                     <button class="btn btn-secondary" onclick="switchTab(0)">Back to Step 1</button>
                 </div>
             </div>

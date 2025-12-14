@@ -695,6 +695,9 @@ function populateResults(simData, timeLimit, limitType) {
         timeLimitDiv.classList.remove('hidden');
     }
     
+    // Display distribution tables
+    displayDistributionTables();
+    
     // Calculate performance measures
     calculatePerformanceMeasures(n, totalInterarrival, totalService, totalWaiting, totalTimeInSystem, totalIdle, numWaited, results);
 }
@@ -821,11 +824,67 @@ function calculatePerformanceMeasures(n, totalInterarrival, totalService, totalW
     }, 100);
 }
 
+function displayDistributionTables() {
+    const distDiv = document.getElementById('distributionTables');
+    if (!distDiv) return;
+    
+    if (!arrivalTable || !serviceTable) return;
+    
+    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 30px;">';
+    
+    // Arrival Time Distribution Table
+    html += '<div class="table-container">';
+    html += '<h3 style="color: #5C4033; margin-top: 0; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #8B4513; padding-bottom: 10px;">Arrival Time Distribution</h3>';
+    html += '<table class="editable-table" style="width: 100%;">';
+    html += '<thead><tr><th>Time</th><th>Probability</th><th>Cumulative</th><th>Random Number Range</th></tr></thead>';
+    html += '<tbody>';
+    
+    for (const row of arrivalTable) {
+        const interval = `${String(row.low).padStart(2, '0')}-${String(row.high).padStart(2, '0')}`;
+        html += `<tr>
+            <td>${row.time.toFixed(3)}</td>
+            <td>${row.prob.toFixed(5)}</td>
+            <td>${row.cum.toFixed(5)}</td>
+            <td>${interval}</td>
+        </tr>`;
+    }
+    
+    html += '</tbody></table></div>';
+    
+    // Service Time Distribution Table
+    html += '<div class="table-container">';
+    html += '<h3 style="color: #5C4033; margin-top: 0; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #8B4513; padding-bottom: 10px;">Service Time Distribution</h3>';
+    html += '<table class="editable-table" style="width: 100%;">';
+    html += '<thead><tr><th>Time</th><th>Probability</th><th>Cumulative</th><th>Random Number Range</th></tr></thead>';
+    html += '<tbody>';
+    
+    for (const row of serviceTable) {
+        const interval = `${String(row.low).padStart(2, '0')}-${String(row.high).padStart(2, '0')}`;
+        html += `<tr>
+            <td>${row.time.toFixed(3)}</td>
+            <td>${row.prob.toFixed(5)}</td>
+            <td>${row.cum.toFixed(5)}</td>
+            <td>${interval}</td>
+        </tr>`;
+    }
+    
+    html += '</tbody></table></div>';
+    html += '</div>';
+    
+    distDiv.innerHTML = html;
+}
+
+function printToPDF() {
+    window.print();
+}
+
 function clearResults() {
     const tbody = document.querySelector('#tableResults tbody');
     const resultsDiv = document.getElementById('queueResults');
+    const distDiv = document.getElementById('distributionTables');
     if (tbody) tbody.innerHTML = '';
     if (resultsDiv) resultsDiv.innerHTML = '';
+    if (distDiv) distDiv.innerHTML = '';
     
     const timeLimitDiv = document.getElementById('timeLimitInfo');
     if (timeLimitDiv) timeLimitDiv.classList.add('hidden');
