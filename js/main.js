@@ -21,7 +21,7 @@ function selectOption(type) {
     selectedOptions.mainType = type;
 
     if (type === "math") {
-        window.location.href = "../pages/mathematical.html";
+        window.location.href = "pages/mathematical.html";
         return;
     }
 
@@ -36,7 +36,7 @@ function selectOption(type) {
     }
 
     if (type === "inventory") {
-        window.location.href = "../pages/inventory.html";
+        window.location.href = "pages/inventory.html";
         return;
     }
 
@@ -59,64 +59,31 @@ function chooseSub(choice) {
     // Single Server Cases
     if (choice === "single-customers") {
         sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
-        window.location.href = "../pages/single/singleLimitedCustomer.html";
+        window.location.href = "pages/single/singleLimitedCustomer.html";
         return;
     }
 
     if (choice === "single-time") {
         sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
-        window.location.href = "../pages/single/singleLimitedTime.html";
+        window.location.href = "pages/single/singleLimitedTime.html";
         return;
     }
 
     // Multiple Server Cases
     if (choice === "multi-customers") {
         sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
-        window.location.href = "../pages/multiple/multiLimitedCustomer.html";
+        window.location.href = "pages/multiple/multiLimitedCustomer.html";
         return;
     }
 
     // Case: Limited by Time → direct navigation (same flow as customer-limited)
     if (choice === "multi-time") {
         sessionStorage.setItem('simulationOptions', JSON.stringify(selectedOptions));
-        window.location.href = "../pages/multiple/multiLimitedTime.html";
+        window.location.href = "pages/multiple/multiLimitedTime.html";
         return;
     }
 
 
-}
-
-function updateSummary() {
-    const summarySection = document.getElementById("summarySection");
-    const summaryText = document.getElementById("summaryText");
-
-    if (!summarySection || !summaryText) return;
-
-    if (!selectedOptions.mainType || !selectedOptions.subOption )
-        return summarySection.classList.add("hidden");
-
-    let summary = "";
-
-    if (selectedOptions.mainType === "single")
-        summary += "• <strong>Server Type:</strong> Single Server<br>";
-
-    if (selectedOptions.mainType === "multiple")
-        summary += "• <strong>Server Type:</strong> Multiple Server (2 Servers)<br>";
-
-    if (selectedOptions.subOption === "single-customers")
-        summary += "• <strong>Limitation:</strong> Limited by Customer Number<br>";
-
-    if (selectedOptions.subOption === "single-time")
-        summary += "• <strong>Limitation:</strong> Limited by Service Time<br>";
-
-    if (selectedOptions.subOption === "multi-customers")
-        summary += "• <strong>Limitation:</strong> Limited by Customer Number<br>";
-
-    if (selectedOptions.subOption === "multi-time")
-        summary += "• <strong>Limitation:</strong> Limited by Time<br>";
-
-    summaryText.innerHTML = summary;
-    summarySection.classList.remove("hidden");
 }
 
 function startSimulation() {
