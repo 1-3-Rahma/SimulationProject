@@ -83,10 +83,11 @@
                     
                     <textarea id="txtArrivals" rows="4" placeholder="Alternative: Enter time,prob (one per line)&#10;1,0.25&#10;2,0.40&#10;3,0.35" style="margin-bottom: 15px; display: none;"></textarea>
 
-                    <h3>Arrival Table (Time | Probability | Cumulative | Interval 01–100)</h3>
+                    <h3>Arrival Table (Time | Probability | Cumulative | Interval 00–100)</h3>
                     <table id="tableArrival" class="editable-table">
                         <thead>
                             <tr>
+                                <th style="width: 50px;">#</th>
                                 <th style="width: 50px;"></th>
                                 <th>Time</th>
                                 <th>Probability</th>
@@ -96,6 +97,7 @@
                         </thead>
                         <tbody id="tbodyArrival">
                             <tr>
+                                <td class="row-num"></td>
                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteArrivalRow(this)" title="Delete row">🗑️</button></td>
                                 <td><input type="number" class="table-input" step="0.1" min="0" placeholder="Time" onchange="calculateArrivalTable()"></td>
                                 <td><input type="number" class="table-input" step="0.01" min="0" max="1" placeholder="Prob" onchange="calculateArrivalTable()"></td>
@@ -103,6 +105,7 @@
                                 <td class="calculated-cell"></td>
                             </tr>
                             <tr>
+                                <td class="row-num"></td>
                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteArrivalRow(this)" title="Delete row">🗑️</button></td>
                                 <td><input type="number" class="table-input" step="0.1" min="0" placeholder="Time" onchange="calculateArrivalTable()"></td>
                                 <td><input type="number" class="table-input" step="0.01" min="0" max="1" placeholder="Prob" onchange="calculateArrivalTable()"></td>
@@ -110,6 +113,7 @@
                                 <td class="calculated-cell"></td>
                             </tr>
                             <tr>
+                                <td class="row-num"></td>
                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteArrivalRow(this)" title="Delete row">🗑️</button></td>
                                 <td><input type="number" class="table-input" step="0.1" min="0" placeholder="Time" onchange="calculateArrivalTable()"></td>
                                 <td><input type="number" class="table-input" step="0.01" min="0" max="1" placeholder="Prob" onchange="calculateArrivalTable()"></td>
@@ -162,7 +166,7 @@
                     <!-- Manual Input Section -->
                     <div id="manualSection" class="method-section active">
                         <h3>Manual Random Number Input</h3>
-                        <p>Enter random numbers between 1 and 100 directly in the table cells</p>
+                        <p>Enter random numbers between 0 and 100 directly in the table cells</p>
                         
                         <div class="random-tables-container">
                             <div class="random-table-box">
@@ -177,20 +181,24 @@
                                     <table id="tableRnArr" class="editable-table random-numbers-table">
                                         <thead>
                                             <tr>
+                                                <th style="width: 50px;">#</th>
                                                 <th style="width: 50px;"></th>
                                                 <th>Random Number</th>
                                             </tr>
                                         </thead>
                                         <tbody id="tbodyRnArr">
                                             <tr>
+                                                <td class="row-num"></td>
                                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'arrival')" title="Delete row">🗑️</button></td>
                                                 <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
                                             </tr>
                                             <tr>
+                                                <td class="row-num"></td>
                                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'arrival')" title="Delete row">🗑️</button></td>
                                                 <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
                                             </tr>
                                             <tr>
+                                                <td class="row-num"></td>
                                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'arrival')" title="Delete row">🗑️</button></td>
                                                 <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
                                             </tr>
@@ -212,20 +220,23 @@
                                     <table id="tableRnServ" class="editable-table random-numbers-table">
                                         <thead>
                                             <tr>
-                                                <th style="width: 50px;"></th>
+                                                <th style="width: 50px;">#</th>
                                                 <th>Random Number</th>
                                             </tr>
                                         </thead>
                                         <tbody id="tbodyRnServ">
                                             <tr>
+                                                <td class="row-num"></td>
                                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'service')" title="Delete row">🗑️</button></td>
                                                 <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
                                             </tr>
                                             <tr>
+                                                <td class="row-num"></td>
                                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'service')" title="Delete row">🗑️</button></td>
                                                 <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
                                             </tr>
                                             <tr>
+                                                <td class="row-num"></td>
                                                 <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'service')" title="Delete row">🗑️</button></td>
                                                 <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
                                             </tr>

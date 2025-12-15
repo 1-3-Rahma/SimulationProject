@@ -27,30 +27,39 @@ function parseDistributionText(text) {
     return dist;
 }
 
-function buildCumulativeIntervals(dist) {
+// Initialize row numbers on page load
+window.addEventListener('DOMContentLoaded', () => {
+    ['tbodyArrival', 'tbodyS1', 'tbodyS2', 'tbodyRnArr', 'tbodyRnServ'].forEach(id => {
+        try { updateRowNumbers(id); } catch (e) { /* ignore */ }
+    });
+});
+
+function buildCumulativeIntervals(dist, scale = 100) {
     const table = [];
     let cum = 0.0;
-    let prevUpper = 0;
+    let prevUpper = -1;
     const n = dist.length;
-    
+
     for (let i = 0; i < n; i++) {
         const [time, prob] = dist[i];
         cum += prob;
-        let upper = Math.round(cum * 100);
+        let upper = Math.round(cum * scale);
         if (upper <= prevUpper) upper = prevUpper + 1;
-        if (i === n - 1) upper = 100;
-        
+        if (i === n - 1) upper = scale;
+
         const low = prevUpper + 1;
+        const low0 = low;
+        const high0 = upper;
         table.push({
             time: time,
             prob: prob,
             cum: parseFloat(cum.toFixed(5)),
-            low: low,
-            high: upper
+            low: low0,
+            high: high0
         });
         prevUpper = upper;
     }
-    
+
     return table;
 }
 
@@ -67,9 +76,12 @@ function validateTotalProbability(dist, label, silent = false) {
 }
 
 function mapRandomToTime(rn, table) {
-    if (rn < 1 || rn > 100) throw new Error("Random numbers must be in the range 1..100.");
+    let digit = parseFloat(rn);
+    if (isNaN(digit)) throw new Error("Invalid random number.");
+    const maxScale = table.length > 0 ? table[table.length - 1].high : 99;
+    if (digit < 0 || digit > maxScale) throw new Error(`Random numbers must be in the range 0..${maxScale}.`);
     for (const row of table) {
-        if (rn >= row.low && rn <= row.high) return row.time;
+        if (digit >= row.low && digit <= row.high) return row.time;
     }
     return table[table.length - 1].time;
 }
@@ -189,6 +201,13 @@ let s1Table = null;
 let s2Table = null;
 let currentTab = 0;
 
+// Key for saving/restoring page state across refresh
+const STATE_KEY = 'multiLimitedCustomerState_v1';
+
+// Keep last simulation results so we can show
+// random-number → time mapping tables in Step 5
+let lastResults = [];
+
 // ========== Tab Management ==========
 
 function switchTab(tabIdx) {
@@ -214,6 +233,24 @@ function nextTab(tabIdx) {
             if (!ok1) return;
             const { ok: ok2 } = validateTotalProbability(dist2, 'Service (Server 2)');
             if (!ok2) return;
+        } else if (currentTab === 3) { // leaving random-numbers step
+            // Ensure random numbers counts meet requirements before moving to Step 5
+            const numCustomers = parseInt(document.getElementById('numCustomers').value);
+            if (isNaN(numCustomers) || numCustomers <= 0) {
+                alert('Please enter a valid number of customers before proceeding.');
+                return;
+            }
+            const arrRns = readRandomNumbersFromTable('arrival');
+            const servRns = readRandomNumbersFromTable('service');
+            const requiredArrCount = Math.max(0, numCustomers - 1);
+            if (arrRns.length < requiredArrCount) {
+                alert(`Need at least ${requiredArrCount} arrival random numbers (for customers 2..${numCustomers}). Currently have ${arrRns.length}.`);
+                return;
+            }
+            if (servRns.length < numCustomers) {
+                alert(`Need at least ${numCustomers} service random numbers (one per customer). Currently have ${servRns.length}.`);
+                return;
+            }
         }
     }
     switchTab(tabIdx);
@@ -231,9 +268,9 @@ function readDistributionFromTable(tbodyId) {
     const dist = [];
     
     for (const row of rows) {
-        // Account for action cell in first column, so inputs are in 2nd and 3rd columns
-        const timeInput = row.querySelector('td:nth-child(2) input');
-        const probInput = row.querySelector('td:nth-child(3) input');
+        // Account for row-num + action cells in first columns, so inputs are in 3rd and 4th columns
+        const timeInput = row.querySelector('td:nth-child(3) input');
+        const probInput = row.querySelector('td:nth-child(4) input');
         
         if (!timeInput || !probInput) continue;
         
@@ -253,6 +290,22 @@ function readDistributionFromTable(tbodyId) {
     return dist;
 }
 
+// Update row numbers for a given tbody
+function updateRowNumbers(tbodyId) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach((row, idx) => {
+        let numCell = row.querySelector('.row-num');
+        if (!numCell) {
+            numCell = document.createElement('td');
+            numCell.className = 'row-num';
+            row.insertBefore(numCell, row.firstElementChild);
+        }
+        numCell.textContent = (idx + 1).toString();
+    });
+}
+
 function calculateArrivalTable() {
     try {
         const dist = readDistributionFromTable('tbodyArrival');
@@ -262,8 +315,8 @@ function calculateArrivalTable() {
             const tbody = document.getElementById('tbodyArrival');
             const rows = tbody.querySelectorAll('tr');
             const hasAnyInput = Array.from(rows).some(row => {
-                const timeInput = row.querySelector('td:nth-child(2) input');
-                const probInput = row.querySelector('td:nth-child(3) input');
+                const timeInput = row.querySelector('td:nth-child(3) input');
+                const probInput = row.querySelector('td:nth-child(4) input');
                 if (!timeInput || !probInput) return false;
                 const time = parseFloat(timeInput.value);
                 const prob = parseFloat(probInput.value);
@@ -291,8 +344,8 @@ function calculateArrivalTable() {
         
         rows.forEach((row, idx) => {
             if (idx < table.length) {
-                const cumCell = row.querySelector('td:nth-child(4)');
-                const intervalCell = row.querySelector('td:nth-child(5)');
+                const cumCell = row.querySelector('td:nth-child(5)');
+                const intervalCell = row.querySelector('td:nth-child(6)');
                 const interval = `${String(table[idx].low).padStart(2, '0')}-${String(table[idx].high).padStart(2, '0')}`;
                 
                 if (cumCell) cumCell.textContent = table[idx].cum.toFixed(5);
@@ -308,15 +361,16 @@ function addArrivalRow() {
     const tbody = document.getElementById('tbodyArrival');
     const tr = document.createElement('tr');
     tr.innerHTML = `
+        <td class="row-num"></td>
         <td class="action-cell"><button class="btn-delete-row" onclick="deleteArrivalRow(this)" title="Delete row">🗑️</button></td>
         <td><input type="number" class="table-input" step="0.1" value="" placeholder="Time" onchange="calculateArrivalTable()" onblur="if(this.value !== '') calculateArrivalTable()"></td>
         <td><input type="number" class="table-input" step="0.01" value="" placeholder="Prob" onchange="calculateArrivalTable()" onblur="if(this.value !== '') calculateArrivalTable()"></td>
-        <td class="calculated-cell">--</td>
-        <td class="calculated-cell">--</td>
+        <td class="calculated-cell"></td>
+        <td class="calculated-cell"></td>
     `;
     tbody.appendChild(tr);
     // Focus on the first input of the new row
-    tr.querySelector('td:nth-child(2) input').focus();
+    tr.querySelector('td:nth-child(3) input').focus();
 }
 
 function deleteArrivalRow(btn) {
@@ -374,8 +428,8 @@ function calculateServiceTable(serverId) {
             const tbody = document.getElementById(tbodyId);
             const rows = tbody.querySelectorAll('tr');
             const hasAnyInput = Array.from(rows).some(row => {
-                const timeInput = row.querySelector('td:nth-child(2) input');
-                const probInput = row.querySelector('td:nth-child(3) input');
+                const timeInput = row.querySelector('td:nth-child(3) input');
+                const probInput = row.querySelector('td:nth-child(4) input');
                 if (!timeInput || !probInput) return false;
                 const time = parseFloat(timeInput.value);
                 const prob = parseFloat(probInput.value);
@@ -408,8 +462,8 @@ function calculateServiceTable(serverId) {
         
         rows.forEach((row, idx) => {
             if (idx < table.length) {
-                const cumCell = row.querySelector('td:nth-child(4)');
-                const intervalCell = row.querySelector('td:nth-child(5)');
+                const cumCell = row.querySelector('td:nth-child(5)');
+                const intervalCell = row.querySelector('td:nth-child(6)');
                 const interval = `${String(table[idx].low).padStart(2, '0')}-${String(table[idx].high).padStart(2, '0')}`;
                 
                 if (cumCell) cumCell.textContent = table[idx].cum.toFixed(5);
@@ -431,15 +485,16 @@ function addServiceRow(serverId) {
     const tbody = document.getElementById(tbodyId);
     const tr = document.createElement('tr');
     tr.innerHTML = `
+        <td class="row-num"></td>
         <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this, ${serverId})" title="Delete row">🗑️</button></td>
         <td><input type="number" class="table-input" step="0.1" min="0" value="" placeholder="Time" onchange="calculateServiceTable(${serverId})" onblur="if(this.value !== '') calculateServiceTable(${serverId})"></td>
         <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="" placeholder="Prob" onchange="calculateServiceTable(${serverId})" onblur="if(this.value !== '') calculateServiceTable(${serverId})"></td>
-        <td class="calculated-cell">--</td>
-        <td class="calculated-cell">--</td>
+        <td class="calculated-cell"></td>
+        <td class="calculated-cell"></td>
     `;
     tbody.appendChild(tr);
     // Focus on the first input of the new row
-    tr.querySelector('td:nth-child(2) input').focus();
+    tr.querySelector('td:nth-child(3) input').focus();
 }
 
 function deleteServiceRow(btn, serverId) {
@@ -546,7 +601,7 @@ function readRandomNumbersFromTable(type) {
     const numbers = [];
     
     for (const row of rows) {
-        const input = row.querySelector('td:nth-child(2) input');
+        const input = row.querySelector('td:nth-child(3) input');
         if (!input) continue;
         
         const value = parseInt(input.value);
@@ -563,12 +618,14 @@ function addRandomNumberRow(type) {
     const tbody = document.getElementById(tbodyId);
     const tr = document.createElement('tr');
     tr.innerHTML = `
+        <td class="row-num"></td>
         <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, '${type}')" title="Delete row">🗑️</button></td>
         <td><input type="number" class="table-input" min="1" max="100" value="" placeholder="1-100" onchange="updateRandomNumberCounts()"></td>
     `;
     tbody.appendChild(tr);
-    tr.querySelector('td:nth-child(2) input').focus();
+    tr.querySelector('td:nth-child(3) input').focus();
     updateRandomNumberCounts();
+    updateRowNumbers(tbodyId);
 }
 
 function deleteRandomNumberRow(btn, type) {
@@ -580,6 +637,7 @@ function deleteRandomNumberRow(btn, type) {
     }
     btn.closest('tr').remove();
     updateRandomNumberCounts();
+    updateRowNumbers(tbodyId);
 }
 
 function generateRandomNumberRows(type) {
@@ -600,6 +658,7 @@ function generateRandomNumberRows(type) {
     for (let i = 0; i < count; i++) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
+            <td class="row-num"></td>
             <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, '${type}')" title="Delete row">🗑️</button></td>
             <td><input type="number" class="table-input" min="1" max="100" value="" placeholder="1-100" onchange="updateRandomNumberCounts()"></td>
         `;
@@ -609,10 +668,11 @@ function generateRandomNumberRows(type) {
     // Focus on first input of the last added row
     const lastRow = tbody.lastElementChild;
     if (lastRow) {
-        lastRow.querySelector('td:nth-child(2) input').focus();
+        lastRow.querySelector('td:nth-child(3) input').focus();
     }
     
     updateRandomNumberCounts();
+    updateRowNumbers(tbodyId);
 }
 
 function updateRandomNumberCounts() {
@@ -707,6 +767,7 @@ function populateResults(simData) {
     tbody.innerHTML = '';
     
     const results = simData.results;
+    lastResults = results.slice(); // store for Step 5 display
     const n = results.length;
     
     // Calculate totals for performance measures
@@ -748,7 +809,7 @@ function populateResults(simData) {
     infoDiv.innerHTML = `Detected faster: <strong>${faster}</strong> (avg=${simData.avg1}), slower: <strong>${slower}</strong> (avg=${simData.avg2})`;
     infoDiv.classList.remove('hidden');
     
-    // Display distribution tables
+    // Display distribution tables and random-number mappings
     displayDistributionTables();
     
     // Calculate performance measures
@@ -853,11 +914,135 @@ function clearResults() {
     alert('Results cleared. You can run another simulation.');
 }
 
+// ========== State Persistence (tab + user inputs) ==========
+
+function collectUserInputs() {
+    const inputs = {};
+    const fields = document.querySelectorAll('input, select, textarea');
+    let hasValue = false;
+
+    fields.forEach(el => {
+        if (!el.id) return;
+        const val = el.value;
+        if (val !== '' && val != null) {
+            hasValue = true;
+        }
+        inputs[el.id] = val;
+    });
+
+    return { inputs, hasValue };
+}
+
+function collectTableBodies() {
+    const bodies = {};
+    const tbodies = document.querySelectorAll('tbody[id]');
+    let hasContent = false;
+
+    tbodies.forEach(tb => {
+        const html = tb.innerHTML;
+        if (html && html.trim().length > 0) {
+            hasContent = true;
+        }
+        bodies[tb.id] = html;
+    });
+
+    return { bodies, hasContent };
+}
+
+function savePageState() {
+    try {
+        const { inputs, hasValue } = collectUserInputs();
+        const { bodies, hasContent } = collectTableBodies();
+
+        if (!hasValue && !hasContent) {
+            localStorage.removeItem(STATE_KEY);
+            return;
+        }
+
+        const state = {
+            currentTab,
+            inputs,
+            bodies,
+            hasUserData: true
+        };
+        localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    } catch (e) {
+        // Ignore persistence errors
+    }
+}
+
+function restorePageState() {
+    try {
+        const raw = localStorage.getItem(STATE_KEY);
+        if (!raw) return;
+
+        const state = JSON.parse(raw);
+        if (!state || !state.hasUserData) return;
+
+        if (state.inputs) {
+            Object.keys(state.inputs).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.value = state.inputs[id];
+                }
+            });
+        }
+
+        if (state.bodies) {
+            Object.keys(state.bodies).forEach(id => {
+                const tb = document.getElementById(id);
+                if (tb && typeof state.bodies[id] === 'string') {
+                    tb.innerHTML = state.bodies[id];
+                    try {
+                        tb.querySelectorAll('td.calculated-cell').forEach(c => c.textContent = '');
+                    } catch (e) {}
+                }
+            });
+        }
+
+        if (typeof state.currentTab === 'number') {
+            switchTab(state.currentTab);
+        }
+
+        setTimeout(() => {
+            try {
+                const arrivalDist = readDistributionFromTable('tbodyArrival');
+                if (arrivalDist.length > 0) {
+                    calculateArrivalTable();
+                }
+            } catch (e) {}
+            
+            try {
+                const s1Dist = readDistributionFromTable('tbodyS1');
+                if (s1Dist.length > 0) {
+                    calculateServiceTable(1);
+                }
+            } catch (e) {}
+            
+            try {
+                const s2Dist = readDistributionFromTable('tbodyS2');
+                if (s2Dist.length > 0) {
+                    calculateServiceTable(2);
+                }
+            } catch (e) {}
+            
+            updateRandomNumberCounts();
+        }, 50);
+    } catch (e) {
+        // Ignore restore errors
+    }
+}
+
+window.addEventListener('beforeunload', savePageState);
+
 // ========== Initialization ==========
 
 // Initialize tables on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Calculate initial tables if they have default values (silently, no alerts)
+    // Try to restore previous state first
+    restorePageState();
+
+    // Then calculate default tables if needed
     setTimeout(() => {
         try {
             const arrivalDist = readDistributionFromTable('tbodyArrival');
@@ -893,10 +1078,15 @@ function displayDistributionTables() {
     if (!distDiv) return;
     
     if (!arrivalTable || !s1Table || !s2Table) return;
+
+    const hasResults = Array.isArray(lastResults) && lastResults.length > 0;
     
-    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 30px;">';
-    
-    // Arrival Time Distribution Table
+    let html = '';
+
+    // ========== ARRIVAL SECTION: Distribution + RN→Interarrival ==========
+    html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; margin-bottom: 30px;">';
+
+    // Left: Arrival Distribution
     html += '<div class="table-container">';
     html += '<h3 style="color: #5C4033; margin-top: 0; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #8B4513; padding-bottom: 10px;">Arrival Time Distribution</h3>';
     html += '<table class="editable-table" style="width: 100%;">';
@@ -914,10 +1104,41 @@ function displayDistributionTables() {
     }
     
     html += '</tbody></table></div>';
-    
-    // Server 1 Service Time Distribution Table
+
+    // Right: Arrival Random Numbers → Interarrival Times
     html += '<div class="table-container">';
-    html += '<h3 style="color: #5C4033; margin-top: 0; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #8B4513; padding-bottom: 10px;">Server 1 Service Time Distribution</h3>';
+    html += '<h3 style="color: #5C4033; margin-top: 0; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #8B4513; padding-bottom: 10px;">Arrival Random Numbers → Interarrival Time</h3>';
+    html += '<table class="editable-table" style="width: 100%;">';
+    html += '<thead><tr><th>Customer</th><th>RN(Arr)</th><th>Interarrival Time</th></tr></thead>';
+    html += '<tbody>';
+
+    if (hasResults) {
+        for (const row of lastResults) {
+            const cust = row.cust;
+            const rn = row.rn_arr !== null && row.rn_arr !== undefined ? row.rn_arr : '—';
+            const inter = row.arr_interval !== null && row.arr_interval !== undefined
+                ? row.arr_interval.toFixed(3)
+                : '—';
+            html += `<tr>
+                <td>${cust}</td>
+                <td>${rn}</td>
+                <td>${inter}</td>
+            </tr>`;
+        }
+    }
+
+    html += '</tbody></table></div>';
+    html += '</div>'; // end arrival grid
+
+    // ========== SERVICE SECTION: Distributions + RN→Service Time ==========
+    html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; margin-bottom: 30px;">';
+
+    // Left: Service Distributions (Server 1 & 2 stacked)
+    html += '<div>';
+
+    // Server 1 Service Time Distribution Table
+    html += '<div class="table-container" style="margin-bottom: 20px;">';
+    html += '<h3 style="color: #5C4033; margin-top: 0; margin-bottom: 10px; text-align: center; border-bottom: 2px solid #8B4513; padding-bottom: 8px;">Server 1 Service Time Distribution</h3>';
     html += '<table class="editable-table" style="width: 100%;">';
     html += '<thead><tr><th>Time</th><th>Probability</th><th>Cumulative</th><th>Random Number Range</th></tr></thead>';
     html += '<tbody>';
@@ -933,10 +1154,10 @@ function displayDistributionTables() {
     }
     
     html += '</tbody></table></div>';
-    
+
     // Server 2 Service Time Distribution Table
     html += '<div class="table-container">';
-    html += '<h3 style="color: #5C4033; margin-top: 0; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #8B4513; padding-bottom: 10px;">Server 2 Service Time Distribution</h3>';
+    html += '<h3 style="color: #5C4033; margin-top: 0; margin-bottom: 10px; text-align: center; border-bottom: 2px solid #8B4513; padding-bottom: 8px;">Server 2 Service Time Distribution</h3>';
     html += '<table class="editable-table" style="width: 100%;">';
     html += '<thead><tr><th>Time</th><th>Probability</th><th>Cumulative</th><th>Random Number Range</th></tr></thead>';
     html += '<tbody>';
@@ -952,7 +1173,31 @@ function displayDistributionTables() {
     }
     
     html += '</tbody></table></div>';
-    html += '</div>';
+
+    html += '</div>'; // end left service distributions
+
+    // Right: Service Random Numbers → Service Time (per customer & server)
+    html += '<div class="table-container">';
+    html += '<h3 style="color: #5C4033; margin-top: 0; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #8B4513; padding-bottom: 10px;">Service Random Numbers → Service Time</h3>';
+    html += '<table class="editable-table" style="width: 100%;">';
+    html += '<thead><tr><th>Customer</th><th>Server</th><th>Server Name</th><th>RN(Serv)</th><th>Service Time</th></tr></thead>';
+    html += '<tbody>';
+
+    if (hasResults) {
+        for (const row of lastResults) {
+            html += `<tr>
+                <td>${row.cust}</td>
+                <td>${row.server}</td>
+                <td>${row.server_name}</td>
+                <td>${row.rn_serv}</td>
+                <td>${row.service_time.toFixed(3)}</td>
+            </tr>`;
+        }
+    }
+
+    html += '</tbody></table></div>';
+
+    html += '</div>'; // end service grid
     
     distDiv.innerHTML = html;
 }
