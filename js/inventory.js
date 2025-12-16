@@ -1,6 +1,10 @@
 let demandData = [];
 let leadTimeData = [];
 let pendingOrders = [];
+let currentStep = 1;
+let randomMethod = 'manual';
+let autoDemandRandoms = [];
+let autoLeadRandoms = [];
 
 function init() {
     demandData = [
@@ -21,23 +25,75 @@ function init() {
     updateLeadTimeTable();
 }
 
+function showError(message) {
+    const box = document.getElementById('errorBox');
+    if (box) {
+        box.textContent = message;
+        box.classList.remove('hidden');
+    } else {
+        alert(message);
+    }
+}
+
+function clearError() {
+    const box = document.getElementById('errorBox');
+    if (box) {
+        box.textContent = '';
+        box.classList.add('hidden');
+    }
+}
+
 function getDecimalPlaces(data) {
     let maxDecimals = 0;
     data.forEach(item => {
-        const probStr = item.prob.toString();
+        const probStr = (item.prob ?? '').toString();
         if (probStr.includes('.')) {
             const decimals = probStr.split('.')[1].length;
             maxDecimals = Math.max(maxDecimals, decimals);
         }
     });
-    return maxDecimals;
+    return maxDecimals || 2;
+}
+
+function validateBasics() {
+    const requiredIds = ['stdInventory', 'reviewLength', 'numCycles', 'startInventory'];
+    for (const id of requiredIds) {
+        const el = document.getElementById(id);
+        if (!el || el.value === '') {
+            showError('All basic inputs are required before continuing.');
+            return false;
+        }
+    }
+    clearError();
+    return true;
+}
+
+function validateProbabilitySum(data) {
+    const total = data.reduce((sum, item) => sum + (parseFloat(item.prob) || 0), 0);
+    if (total > 1.000001 || Math.abs(total - 1) > 0.0001) {
+        showError(`Service probabilities must sum to 1. Current total = ${total.toFixed(4)}. Please adjust the probabilities.`);
+        return false;
+    }
+    return true;
 }
 
 function goToStep(step) {
-    for (let i = 1; i <= 4; i++) {
-        document.getElementById(`step${i}`).classList.add('hidden');
+    if (step > currentStep) {
+        if (currentStep === 1 && !validateBasics()) return;
+        if (currentStep === 2) {
+            if (!validateProbabilitySum(demandData)) return;
+            if (!validateProbabilitySum(leadTimeData)) return;
+        }
+        
     }
-    document.getElementById(`step${step}`).classList.remove('hidden');
+    clearError();
+    for (let i = 1; i <= 4; i++) {
+        document.getElementById(`step${i}`).classList.remove('active');
+        document.getElementById(`tabBtn${i}`).classList.remove('active');
+    }
+    document.getElementById(`step${step}`).classList.add('active');
+    document.getElementById(`tabBtn${step}`).classList.add('active');
+    currentStep = step;
 }
 
 function addPendingOrder() {
@@ -54,13 +110,13 @@ function addPendingOrder() {
         <button class="btn btn-secondary" onclick="removePendingOrder(${index})">Remove</button>
     `;
     container.appendChild(div);
-    pendingOrders.push({index: index});
+    pendingOrders.push({ index: index });
 }
 
 function removePendingOrder(index) {
     pendingOrders = pendingOrders.filter(o => o.index !== index);
     const container = document.getElementById('pendingOrdersList');
-    Array.from(container.children).forEach((child, i) => {
+    Array.from(container.children).forEach(child => {
         if (child.querySelector(`#pendingUnits${index}`)) {
             child.remove();
         }
@@ -68,7 +124,7 @@ function removePendingOrder(index) {
 }
 
 function addDemandRow() {
-    demandData.push({demand: demandData.length, prob: 0});
+    demandData.push({ demand: demandData.length, prob: 0 });
     updateDemandTable();
 }
 
@@ -78,7 +134,7 @@ function removeDemandRow(index) {
 }
 
 function addLeadTimeRow() {
-    leadTimeData.push({leadTime: leadTimeData.length, prob: 0});
+    leadTimeData.push({ leadTime: leadTimeData.length, prob: 0 });
     updateLeadTimeTable();
 }
 
@@ -97,17 +153,12 @@ function updateDemandTable() {
     let cumProb = 0;
     demandData.forEach((item, index) => {
         const prevCum = cumProb;
-        cumProb += item.prob;
+        cumProb += parseFloat(item.prob) || 0;
         
         let rangeStart = Math.round(prevCum * multiplier);
         let rangeEnd = Math.round(cumProb * multiplier);
         
-        if (index === 0) {
-            rangeStart = 1;
-        } else {
-            rangeStart = Math.round(prevCum * multiplier) + 1;
-        }
-        
+        rangeStart = index === 0 ? 1 : Math.round(prevCum * multiplier) + 1;
         if (index === demandData.length - 1) {
             rangeEnd = multiplier;
         }
@@ -116,7 +167,6 @@ function updateDemandTable() {
         if (rangeStart <= rangeEnd) {
             const padLength = decimalPlaces;
             const startStr = String(rangeStart).padStart(padLength, '0');
-            // For last row, if rangeEnd equals multiplier, it wraps to 0 (or 00, 000, etc.)
             let endStr;
             if (index === demandData.length - 1 && rangeEnd === multiplier) {
                 endStr = '0'.repeat(padLength);
@@ -147,19 +197,12 @@ function updateLeadTimeTable() {
     let cumProb = 0;
     leadTimeData.forEach((item, index) => {
         const prevCum = cumProb;
-        cumProb += item.prob;
+        cumProb += parseFloat(item.prob) || 0;
         
         let rangeStart = Math.round(prevCum * multiplier);
         let rangeEnd = Math.round(cumProb * multiplier);
         
-        // For first row, start from 1 (or 01 for 2 decimals)
-        if (index === 0) {
-            rangeStart = 1;
-        } else {
-            rangeStart = Math.round(prevCum * multiplier) + 1;
-        }
-        
-        // For last row, ensure it ends with 0 (or 00 for 2 decimals)
+        rangeStart = index === 0 ? 1 : Math.round(prevCum * multiplier) + 1;
         if (index === leadTimeData.length - 1) {
             rangeEnd = multiplier;
         }
@@ -168,7 +211,6 @@ function updateLeadTimeTable() {
         if (rangeStart <= rangeEnd) {
             const padLength = decimalPlaces;
             const startStr = String(rangeStart).padStart(padLength, '0');
-            // For last row, if rangeEnd equals multiplier, it wraps to 0 (or 00, 000, etc.)
             let endStr;
             if (index === leadTimeData.length - 1 && rangeEnd === multiplier) {
                 endStr = '0'.repeat(padLength);
@@ -189,6 +231,7 @@ function updateLeadTimeTable() {
 }
 
 function generateRandomInputs() {
+    if (randomMethod !== 'manual') return;
     const numDemand = parseInt(document.getElementById('numDemandRandoms').value);
     const numLeadTime = parseInt(document.getElementById('numLeadTimeRandoms').value);
     
@@ -199,12 +242,40 @@ function generateRandomInputs() {
     leadTimeContainer.innerHTML = '';
     
     for (let i = 0; i < numDemand; i++) {
-        demandContainer.innerHTML += `<input type="number" class="random-input" id="demandRand${i}" step="0.01" min="0" max="1" placeholder="0.${i}">`;
+        demandContainer.innerHTML += `<input type="number" class="random-input" id="demandRand${i}" min="0" max="99" placeholder="00">`;
     }
     
     for (let i = 0; i < numLeadTime; i++) {
-        leadTimeContainer.innerHTML += `<input type="number" class="random-input" id="leadTimeRand${i}" step="0.01" min="0" max="1" placeholder="0.${i}">`;
+        leadTimeContainer.innerHTML += `<input type="number" class="random-input" id="leadTimeRand${i}" min="0" max="99" placeholder="00">`;
     }
+}
+
+function switchRandomMethod(method) {
+    randomMethod = method;
+    document.querySelectorAll('.method-tab').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.method-section').forEach(sec => sec.classList.remove('active'));
+    if (method === 'manual') {
+        document.getElementById('tabManual').classList.add('active');
+        document.getElementById('manualRandomSection').classList.add('active');
+    } else {
+        document.getElementById('tabAuto').classList.add('active');
+        document.getElementById('autoRandomSection').classList.add('active');
+    }
+}
+
+function generateAutoRandoms() {
+    const demandCount = parseInt(document.getElementById('autoDemandCount').value) || 0;
+    const leadCount = parseInt(document.getElementById('autoLeadCount').value) || 0;
+    if (demandCount <= 0 || leadCount <= 0) {
+        showError('Please enter positive counts for auto-generated random digits.');
+        return;
+    }
+    autoDemandRandoms = Array.from({ length: demandCount }, () => Math.floor(Math.random() * 100));
+    autoLeadRandoms = Array.from({ length: leadCount }, () => Math.floor(Math.random() * 100));
+
+    document.getElementById('autoDemandPreview').textContent = autoDemandRandoms.map(n => String(n).padStart(2, '0')).join(', ');
+    document.getElementById('autoLeadPreview').textContent = autoLeadRandoms.map(n => String(n).padStart(2, '0')).join(', ');
+    clearError();
 }
 
 function convertRandomToDigits(random) {
@@ -235,12 +306,7 @@ function mapDigitsToValue(digits, distribution, isDemand) {
         let rangeStart = Math.round(prevCum * multiplier);
         let rangeEnd = Math.round(cumProb * multiplier);
         
-        if (i === 0) {
-            rangeStart = 1;
-        } else {
-            rangeStart = Math.round(prevCum * multiplier) + 1;
-        }
-        
+        rangeStart = i === 0 ? 1 : Math.round(prevCum * multiplier) + 1;
         if (i === distribution.length - 1) {
             rangeEnd = multiplier;
         }
@@ -274,7 +340,84 @@ function readPendingOrdersFromDOM(){
     return list;
 }
 
+function collectManualRandoms(count, prefix) {
+    const values = [];
+    for (let i = 0; i < count; i++) {
+        const el = document.getElementById(`${prefix}${i}`);
+        if (!el || el.value === '') {
+            showError('Please fill all random number inputs or switch to Auto-Generate.');
+            return null;
+        }
+        const val = parseInt(el.value);
+        if (isNaN(val) || val < 0 || val > 99) {
+            showError('Random numbers must be between 00 and 99.');
+            return null;
+        }
+        values.push(val);
+    }
+    return values;
+}
+
+function renderDistributionTables() {
+    const container = document.getElementById('distributionResults');
+    if (!container) return;
+    const buildRows = (data, isDemand) => {
+        const decimalPlaces = getDecimalPlaces(data);
+        const multiplier = Math.pow(10, decimalPlaces);
+        let cum = 0;
+        return data.map((item, idx) => {
+            const prev = cum;
+            cum += parseFloat(item.prob) || 0;
+            let start = idx === 0 ? 1 : Math.round(prev * multiplier) + 1;
+            let end = idx === data.length - 1 ? multiplier : Math.round(cum * multiplier);
+            const startStr = String(start).padStart(decimalPlaces, '0');
+            const endStr = idx === data.length - 1 && end === multiplier ? '0'.repeat(decimalPlaces) : String(end).padStart(decimalPlaces, '0');
+            const assignment = `${startStr}-${endStr}`;
+            const value = isDemand ? item.demand : item.leadTime;
+            return `<tr><td>${value}</td><td>${(item.prob ?? 0).toFixed(2)}</td><td>${cum.toFixed(2)}</td><td>${assignment}</td></tr>`;
+        }).join('');
+    };
+    const demandRows = buildRows(demandData, true);
+    const leadRows = buildRows(leadTimeData, false);
+    container.innerHTML = `
+        <h3>Distribution Tables</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:15px;">
+            <div>
+                <h4 style="margin-top:0;">Demand Distribution</h4>
+                <table class="results-table">
+                    <thead style="position: relative;"><tr><th>Demand</th><th>Probability</th><th>Cumulative</th><th>Random-Digit Assignment</th></tr></thead>
+                    <tbody>${demandRows}</tbody>
+                </table>
+            </div>
+            <div>
+                <h4 style="margin-top:0;">Lead Time Distribution</h4>
+                <table class="results-table">
+                    <thead style="position: relative;"><tr><th>Lead Time</th><th>Probability</th><th>Cumulative</th><th>Random-Digit Assignment</th></tr></thead>
+                    <tbody>${leadRows}</tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function renderPerformanceMeasurements(avgEnding, shortageDays, totalDays) {
+    const container = document.getElementById('performanceMeasurements');
+    if (!container) return;
+    const shortageRatio = totalDays ? (shortageDays / totalDays) : 0;
+    container.innerHTML = `
+        <h3>Performance Measurements</h3>
+        <div class="performance-metrics">
+            <div class="performance-card">Average Ending Inventory<br>${avgEnding.toFixed(2)}</div>
+            <div class="performance-card">Shortage Days Ratio<br>${(shortageRatio * 100).toFixed(2)}% (${shortageDays}/${totalDays})</div>
+        </div>
+    `;
+}
+
 function runSimulation() {
+    if (!validateBasics()) return;
+    if (!validateProbabilitySum(demandData)) return;
+    if (!validateProbabilitySum(leadTimeData)) return;
+
     const M = parseInt(document.getElementById('stdInventory').value);
     const N = parseInt(document.getElementById('reviewLength').value);
     const cycles = parseInt(document.getElementById('numCycles').value);
@@ -282,18 +425,27 @@ function runSimulation() {
 
     const ordersFromDOM = readPendingOrdersFromDOM();
 
-    const numDemandRandoms = parseInt(document.getElementById('numDemandRandoms').value);
-    const numLeadTimeRandoms = parseInt(document.getElementById('numLeadTimeRandoms').value);
-    const demandRandoms = [];
-    const leadTimeRandoms = [];
-    
-    for (let i = 0; i < numDemandRandoms; i++) {
-        const dr = parseFloat(document.getElementById(`demandRand${i}`)?.value || 0);
-        demandRandoms.push(isNaN(dr) ? 0 : dr);
-    }
-    for (let i = 0; i < numLeadTimeRandoms; i++) {
-        const lr = parseFloat(document.getElementById(`leadTimeRand${i}`)?.value || 0);
-        leadTimeRandoms.push(isNaN(lr) ? 0 : lr);
+    let demandRandoms = [];
+    let leadTimeRandoms = [];
+    if (randomMethod === 'auto') {
+        if (autoDemandRandoms.length === 0 || autoLeadRandoms.length === 0) {
+            generateAutoRandoms();
+        }
+        demandRandoms = autoDemandRandoms;
+        leadTimeRandoms = autoLeadRandoms;
+    } else {
+        const numDemandRandoms = parseInt(document.getElementById('numDemandRandoms').value);
+        const numLeadTimeRandoms = parseInt(document.getElementById('numLeadTimeRandoms').value);
+        if (!numDemandRandoms || !numLeadTimeRandoms) {
+            showError('Please enter counts for random numbers before running the simulation.');
+            return;
+        }
+        const demandVals = collectManualRandoms(numDemandRandoms, 'demandRand');
+        if (!demandVals) return;
+        const leadVals = collectManualRandoms(numLeadTimeRandoms, 'leadTimeRand');
+        if (!leadVals) return;
+        demandRandoms = demandVals;
+        leadTimeRandoms = leadVals;
     }
 
     const tbody = document.getElementById('simulationTableBody');
@@ -303,27 +455,19 @@ function runSimulation() {
     let shortage = 0;
     let demandRandomIndex = 0;
     let leadTimeRandomIndex = 0;
+    let endingInventorySum = 0;
+    let shortageDays = 0;
     
-    // For first cycle, start with daysLeft - 1 for pending orders
     let activeOrders = ordersFromDOM.map(o=>({units:o.units, daysLeft:Math.max(0, o.daysLeft - 1)}));
 
     for (let cycle = 1; cycle <= cycles; cycle++) {
         for (let day = 1; day <= N; day++) {
-            // Calculate days until arrival display BEFORE processing arrivals
-            // This shows the current daysLeft value (including 0 when order arrives)
-            // If daysLeft is negative, show "-" instead of 0
             let daysUntilArrivalDisplay = '-';
             if (activeOrders.length > 0) {
                 const minDays = Math.min(...activeOrders.map(o => o.daysLeft));
-                // If minDays is negative, show "-" (order should have arrived)
-                if (minDays < 0) {
-                    daysUntilArrivalDisplay = '-';
-                } else {
-                    daysUntilArrivalDisplay = minDays;
-                }
+                daysUntilArrivalDisplay = minDays < 0 ? '-' : minDays;
             }
             
-            // Check for arriving orders at the START of the day (when daysLeft <= 0)
             let arrivingUnits = 0;
             const remainingOrders = [];
             
@@ -336,22 +480,16 @@ function runSimulation() {
             }
             activeOrders = remainingOrders;
 
-            // If order arrives at START of day, reduce shortage first (until shortage reaches 0)
-            // Then add remaining order quantity to beginning inventory of CURRENT day
             if (arrivingUnits > 0) {
                 if (shortage > 0) {
-                    // Reduce shortage by order quantity (until shortage reaches 0)
                     const usedForShortage = Math.min(arrivingUnits, shortage);
                     shortage -= usedForShortage;
-                    // Remaining order quantity goes to beginning inventory of current day
                     beginInv += arrivingUnits - usedForShortage;
                 } else {
-                    // No shortage, all order quantity goes to beginning inventory of current day
                     beginInv += arrivingUnits;
                 }
             }
 
-            // Process demand to calculate new shortage
             const demandRand = demandRandoms.length ? demandRandoms[demandRandomIndex % demandRandoms.length] : 0;
             const demandDigits = convertRandomToDigits(demandRand);
             const demand = mapDigitsToValue(demandDigits, demandData, true);
@@ -368,17 +506,14 @@ function runSimulation() {
                 endInv = 0;
             } else {
                 endInv = beginInv - demand;
-                shortageIncrease = 0;
             }
 
-            // Shortage is cumulative: previous shortage + new shortage from demand
             shortage += shortageIncrease;
 
             let orderQty = '-';
             let leadTimeRandDisplay = '-';
             let newOrderInfo = null;
 
-            // Check if we need to place an order at the end of this period
             if (day === N) {
                 const orderAmount = M - endInv + shortage;
                 if (orderAmount > 0) {
@@ -386,21 +521,20 @@ function runSimulation() {
                     
                     const ltRand = leadTimeRandoms.length ? leadTimeRandoms[leadTimeRandomIndex % leadTimeRandoms.length] : 0;
                     const ltDigits = convertRandomToDigits(ltRand);
-                    leadTimeRandDisplay = ltDigits;
+                    leadTimeRandDisplay = ltDigits.toString().padStart(1,'0');
                     const leadTime = mapDigitsToValue(ltDigits, leadTimeData, false);
                     
-                    // Store the order info to add after displaying
                     newOrderInfo = {units: orderAmount, daysLeft: leadTime};
                     leadTimeRandomIndex++;
                     
-                    // Update display to show the newly placed order's lead time immediately
                     daysUntilArrivalDisplay = leadTime;
                 }
             }
 
+            const cycleDisplay = day === 1 ? cycle : '';
             const row = tbody.insertRow();
             row.innerHTML = `
-                <td>${cycle}</td>
+                <td>${cycleDisplay}</td>
                 <td>${day}</td>
                 <td>${beginInv}</td>
                 <td>${demandDigits.toString().padStart(2, '0')}</td>
@@ -412,24 +546,84 @@ function runSimulation() {
                 <td>${daysUntilArrivalDisplay}</td>
             `;
 
-            // Add new order after displaying (if one was placed)
             if (newOrderInfo !== null) {
                 activeOrders.push(newOrderInfo);
             }
 
-            // Decrement all active orders for next day (AFTER displaying)
             activeOrders.forEach(order => order.daysLeft -= 1);
 
-            // Set beginning inventory for next day
             beginInv = endInv;
+            endingInventorySum += endInv;
+            if (shortage > 0) {
+                shortageDays += 1;
+            }
         }
     }
 
+    const totalRow = tbody.insertRow();
+    totalRow.innerHTML = `
+        <td colspan="5"></td>
+        <td>${endingInventorySum}</td>
+        <td colspan="4"></td>
+    `;
+
+    renderDistributionTables();
+    const totalDays = cycles * N;
+    const avgEnding = totalDays ? endingInventorySum / totalDays : 0;
+    renderPerformanceMeasurements(avgEnding, shortageDays, totalDays);
+    clearError();
     goToStep(4);
 }
 
-// Initialize when DOM is ready
+async function downloadInventoryPDF() {
+    const report = document.getElementById('resultsExport');
+    if (!report) return;
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4");
+    const canvas = await html2canvas(report, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const imgHeight = (canvas.height * pageWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    
+    pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
+    heightLeft -= pageHeight;
+    while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
+        heightLeft -= pageHeight;
+    }
+    pdf.save("Inventory_Simulation_Report.pdf");
+}
+
+function resetInventory() {
+    document.getElementById('stdInventory').value = '';
+    document.getElementById('reviewLength').value = '';
+    document.getElementById('numCycles').value = '';
+    document.getElementById('startInventory').value = '';
+    document.getElementById('pendingOrdersList').innerHTML = '';
+    pendingOrders = [];
+    demandData = [];
+    leadTimeData = [];
+    updateDemandTable();
+    updateLeadTimeTable();
+    document.getElementById('demandRandoms').innerHTML = '';
+    document.getElementById('leadTimeRandoms').innerHTML = '';
+    document.getElementById('distributionResults').innerHTML = '';
+    document.getElementById('simulationTableBody').innerHTML = '';
+    document.getElementById('performanceMeasurements').innerHTML = '';
+    autoDemandRandoms = [];
+    autoLeadRandoms = [];
+    document.getElementById('autoDemandPreview').textContent = '';
+    document.getElementById('autoLeadPreview').textContent = '';
+    clearError();
+    goToStep(1);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     init();
 });
-
