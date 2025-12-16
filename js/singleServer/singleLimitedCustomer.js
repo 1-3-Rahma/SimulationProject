@@ -27,13 +27,6 @@ function parseDistributionText(text) {
     return dist;
 }
 
-// Initialize row numbers on page load
-window.addEventListener('DOMContentLoaded', () => {
-    ['tbodyArrival', 'tbodyService', 'tbodyRnArr', 'tbodyRnServ'].forEach(id => {
-        try { updateRowNumbers(id); } catch (e) { /* ignore */ }
-    });
-});
-
 // Helper function to determine scale from probability decimal places
 function determineScaleFromProbabilities(dist) {
     let maxDecimalPlaces = 0;
@@ -61,29 +54,27 @@ function determineScaleFromProbabilities(dist) {
 function buildCumulativeIntervals(dist, scale = 100) {
     const table = [];
     let cum = 0.0;
-    let prevUpper = -1;
+    let prevUpper = 0;
     const n = dist.length;
-
+    
     for (let i = 0; i < n; i++) {
         const [time, prob] = dist[i];
         cum += prob;
         let upper = Math.round(cum * scale);
         if (upper <= prevUpper) upper = prevUpper + 1;
         if (i === n - 1) upper = scale;
-
+        
         const low = prevUpper + 1;
-        const low0 = low;
-        const high0 = upper;
         table.push({
             time: time,
             prob: prob,
             cum: parseFloat(cum.toFixed(5)),
-            low: low0,
-            high: high0
+            low: low,
+            high: upper
         });
         prevUpper = upper;
     }
-
+    
     return table;
 }
 
@@ -100,11 +91,21 @@ function validateTotalProbability(dist, label, silent = false) {
 }
 
 function mapRandomToTime(rn, table) {
-    // Map using the table's interval bounds (inclusive), allow up to table's high
+    // Convert rn to number and handle 0 as max scale value
     let digit = parseFloat(rn);
     if (isNaN(digit)) throw new Error("Invalid random number.");
-    const maxScale = table.length > 0 ? table[table.length - 1].high : 99;
-    if (digit < 0 || digit > maxScale) throw new Error(`Random numbers must be in the range 0..${maxScale}.`);
+    
+    // Find the max scale from the table (last row's high value)
+    const maxScale = table.length > 0 ? table[table.length - 1].high : 100;
+    
+    // If digit is 0, treat it as max scale (since 00 represents max in display)
+    if (digit === 0) digit = maxScale;
+    
+    // Check if digit is within valid range
+    if (digit < 1 || digit > maxScale) {
+        throw new Error(`Random numbers must be in the range 1..${maxScale}.`);
+    }
+    
     for (const row of table) {
         if (digit >= row.low && digit <= row.high) return row.time;
     }
@@ -116,17 +117,6 @@ function mapRandomToTime(rn, table) {
 let arrivalTable = null;
 let serviceTable = null;
 let currentTab = 0;
-
-// Key for saving/restoring page state across refresh
-const STATE_KEY = 'singleLimitedCustomerState_v1';
-
-// Keep track of the last simulation inputs so we can show
-// random-number → time mapping tables in Step 5
-let lastNumCustomers = 0;
-let lastArrivalRns = [];
-let lastServiceRns = [];
-let lastInterarrivalTimes = [];
-let lastServiceTimes = [];
 
 // ========== Tab Management ==========
 
@@ -155,24 +145,6 @@ function nextTab(tabIdx) {
             const dist = readDistributionFromTable('tbodyService');
             const { ok } = validateTotalProbability(dist, 'Service');
             if (!ok) return;
-        } else if (currentTab === 3) { // leaving random-numbers step
-            // Ensure random numbers counts meet requirements before moving to Step 5
-            const numCustomers = parseInt(document.getElementById('numCustomers').value);
-            if (isNaN(numCustomers) || numCustomers <= 0) {
-                alert('Please enter a valid number of customers before proceeding.');
-                return;
-            }
-            const arrRns = readRandomNumbersFromTable('arrival');
-            const servRns = readRandomNumbersFromTable('service');
-            const requiredArrCount = Math.max(0, numCustomers - 1);
-            if (arrRns.length < requiredArrCount) {
-                alert(`Need at least ${requiredArrCount} arrival random numbers (for customers 2..${numCustomers}). Currently have ${arrRns.length}.`);
-                return;
-            }
-            if (servRns.length < numCustomers) {
-                alert(`Need at least ${numCustomers} service random numbers (one per customer). Currently have ${servRns.length}.`);
-                return;
-            }
         }
     }
     switchTab(tabIdx);
@@ -190,9 +162,9 @@ function readDistributionFromTable(tbodyId) {
     const dist = [];
     
     for (const row of rows) {
-        // Account for row-num + action cells in first columns, so inputs are in 3rd and 4th columns
-        const timeInput = row.querySelector('td:nth-child(3) input');
-        const probInput = row.querySelector('td:nth-child(4) input');
+        // Account for action cell in first column, so inputs are in 2nd and 3rd columns
+        const timeInput = row.querySelector('td:nth-child(2) input');
+        const probInput = row.querySelector('td:nth-child(3) input');
         
         if (!timeInput || !probInput) continue;
         
@@ -220,8 +192,8 @@ function calculateArrivalTable() {
             const tbody = document.getElementById('tbodyArrival');
             const rows = tbody.querySelectorAll('tr');
             const hasAnyInput = Array.from(rows).some(row => {
-                const timeInput = row.querySelector('td:nth-child(3) input');
-                const probInput = row.querySelector('td:nth-child(4) input');
+                const timeInput = row.querySelector('td:nth-child(2) input');
+                const probInput = row.querySelector('td:nth-child(3) input');
                 if (!timeInput || !probInput) return false;
                 const time = parseFloat(timeInput.value);
                 const prob = parseFloat(probInput.value);
@@ -243,7 +215,7 @@ function calculateArrivalTable() {
 
         // Automatically determine scale from probability decimal places
         const scale = determineScaleFromProbabilities(dist);
-        const numDigits = Math.max(2, Math.ceil(Math.log10(scale)));
+        const numDigits = Math.ceil(Math.log10(scale));
         
         const table = buildCumulativeIntervals(dist, scale);
         arrivalTable = table;
@@ -253,10 +225,11 @@ function calculateArrivalTable() {
         
         rows.forEach((row, idx) => {
             if (idx < table.length) {
-                const cumCell = row.querySelector('td:nth-child(5)');
-                const intervalCell = row.querySelector('td:nth-child(6)');
-                // Format interval with appropriate number of digits (0-based)
-                const interval = `${String(table[idx].low).padStart(numDigits, '0')}-${String(table[idx].high).padStart(numDigits, '0')}`;
+                const cumCell = row.querySelector('td:nth-child(4)');
+                const intervalCell = row.querySelector('td:nth-child(5)');
+                // Format interval with appropriate number of digits
+                const highDisplay = table[idx].high === scale ? 0 : table[idx].high;
+                const interval = `${String(table[idx].low).padStart(numDigits, '0')}-${String(highDisplay).padStart(numDigits, '0')}`;
                 
                 if (cumCell) cumCell.textContent = table[idx].cum.toFixed(5);
                 if (intervalCell) intervalCell.textContent = interval;
@@ -267,37 +240,19 @@ function calculateArrivalTable() {
     }
 }
 
-// Update row numbers for a given tbody
-function updateRowNumbers(tbodyId) {
-    const tbody = document.getElementById(tbodyId);
-    if (!tbody) return;
-    const rows = tbody.querySelectorAll('tr');
-    rows.forEach((row, idx) => {
-        let numCell = row.querySelector('.row-num');
-        if (!numCell) {
-            numCell = document.createElement('td');
-            numCell.className = 'row-num';
-            row.insertBefore(numCell, row.firstElementChild);
-        }
-        numCell.textContent = (idx + 1).toString();
-    });
-}
-
 function addArrivalRow() {
     const tbody = document.getElementById('tbodyArrival');
     const tr = document.createElement('tr');
     tr.innerHTML = `
-        <td class="row-num"></td>
         <td class="action-cell"><button class="btn-delete-row" onclick="deleteArrivalRow(this)" title="Delete row">🗑️</button></td>
         <td><input type="number" class="table-input" step="0.1" value="" placeholder="Time" onchange="calculateArrivalTable()" onblur="if(this.value !== '') calculateArrivalTable()"></td>
         <td><input type="number" class="table-input" step="0.01" value="" placeholder="Prob" onchange="calculateArrivalTable()" onblur="if(this.value !== '') calculateArrivalTable()"></td>
-        <td class="calculated-cell"></td>
-        <td class="calculated-cell"></td>
+        <td class="calculated-cell">--</td>
+        <td class="calculated-cell">--</td>
     `;
     tbody.appendChild(tr);
     // Focus on the first input of the new row
-    tr.querySelector('td:nth-child(3) input').focus();
-    updateRowNumbers('tbodyArrival');
+    tr.querySelector('td:nth-child(2) input').focus();
 }
 
 function deleteArrivalRow(btn) {
@@ -308,7 +263,6 @@ function deleteArrivalRow(btn) {
     }
     btn.closest('tr').remove();
     calculateArrivalTable();
-    updateRowNumbers('tbodyArrival');
 }
 
 function generateArrivalRows() {
@@ -327,12 +281,11 @@ function generateArrivalRows() {
     for (let i = 0; i < count; i++) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td class="row-num"></td>
             <td class="action-cell"><button class="btn-delete-row" onclick="deleteArrivalRow(this)" title="Delete row">🗑️</button></td>
             <td><input type="number" class="table-input" step="0.1" min="0" value="" placeholder="Time" onchange="calculateArrivalTable()" onblur="if(this.value !== '') calculateArrivalTable()"></td>
             <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="" placeholder="Prob" onchange="calculateArrivalTable()" onblur="if(this.value !== '') calculateArrivalTable()"></td>
-            <td class="calculated-cell"></td>
-            <td class="calculated-cell"></td>
+            <td class="calculated-cell">--</td>
+            <td class="calculated-cell">--</td>
         `;
         tbody.appendChild(tr);
     }
@@ -340,11 +293,10 @@ function generateArrivalRows() {
     // Focus on first input of the last added row
     const lastRow = tbody.lastElementChild;
     if (lastRow) {
-        lastRow.querySelector('td:nth-child(3) input').focus();
+        lastRow.querySelector('td:nth-child(2) input').focus();
     }
     
     calculateArrivalTable();
-    updateRowNumbers('tbodyArrival');
 }
 
 function calculateServiceTable() {
@@ -356,8 +308,8 @@ function calculateServiceTable() {
             const tbody = document.getElementById('tbodyService');
             const rows = tbody.querySelectorAll('tr');
             const hasAnyInput = Array.from(rows).some(row => {
-                const timeInput = row.querySelector('td:nth-child(3) input');
-                const probInput = row.querySelector('td:nth-child(4) input');
+                const timeInput = row.querySelector('td:nth-child(2) input');
+                const probInput = row.querySelector('td:nth-child(3) input');
                 if (!timeInput || !probInput) return false;
                 const time = parseFloat(timeInput.value);
                 const prob = parseFloat(probInput.value);
@@ -379,7 +331,7 @@ function calculateServiceTable() {
 
         // Automatically determine scale from probability decimal places
         const scale = determineScaleFromProbabilities(dist);
-        const numDigits = Math.max(2, Math.ceil(Math.log10(scale)));
+        const numDigits = Math.ceil(Math.log10(scale));
         
         const table = buildCumulativeIntervals(dist, scale);
         serviceTable = table;
@@ -389,10 +341,11 @@ function calculateServiceTable() {
         
         rows.forEach((row, idx) => {
             if (idx < table.length) {
-                const cumCell = row.querySelector('td:nth-child(5)');
-                const intervalCell = row.querySelector('td:nth-child(6)');
-                // Format interval with appropriate number of digits (0-based)
-                const interval = `${String(table[idx].low).padStart(numDigits, '0')}-${String(table[idx].high).padStart(numDigits, '0')}`;
+                const cumCell = row.querySelector('td:nth-child(4)');
+                const intervalCell = row.querySelector('td:nth-child(5)');
+                // Format interval with appropriate number of digits
+                const highDisplay = table[idx].high === scale ? 0 : table[idx].high;
+                const interval = `${String(table[idx].low).padStart(numDigits, '0')}-${String(highDisplay).padStart(numDigits, '0')}`;
                 
                 if (cumCell) cumCell.textContent = table[idx].cum.toFixed(5);
                 if (intervalCell) intervalCell.textContent = interval;
@@ -407,17 +360,15 @@ function addServiceRow() {
     const tbody = document.getElementById('tbodyService');
     const tr = document.createElement('tr');
     tr.innerHTML = `
-        <td class="row-num"></td>
         <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this)" title="Delete row">🗑️</button></td>
         <td><input type="number" class="table-input" step="0.1" min="0" value="" placeholder="Time" onchange="calculateServiceTable()" onblur="if(this.value !== '') calculateServiceTable()"></td>
         <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="" placeholder="Prob" onchange="calculateServiceTable()" onblur="if(this.value !== '') calculateServiceTable()"></td>
-        <td class="calculated-cell"></td>
-        <td class="calculated-cell"></td>
+        <td class="calculated-cell">--</td>
+        <td class="calculated-cell">--</td>
     `;
     tbody.appendChild(tr);
     // Focus on the first input of the new row
-    tr.querySelector('td:nth-child(3) input').focus();
-    updateRowNumbers('tbodyService');
+    tr.querySelector('td:nth-child(2) input').focus();
 }
 
 function deleteServiceRow(btn) {
@@ -428,7 +379,6 @@ function deleteServiceRow(btn) {
     }
     btn.closest('tr').remove();
     calculateServiceTable();
-    updateRowNumbers('tbodyService');
 }
 
 function generateServiceRows() {
@@ -447,12 +397,11 @@ function generateServiceRows() {
     for (let i = 0; i < count; i++) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td class="row-num"></td>
             <td class="action-cell"><button class="btn-delete-row" onclick="deleteServiceRow(this)" title="Delete row">🗑️</button></td>
             <td><input type="number" class="table-input" step="0.1" min="0" value="" placeholder="Time" onchange="calculateServiceTable()" onblur="if(this.value !== '') calculateServiceTable()"></td>
             <td><input type="number" class="table-input" step="0.01" min="0" max="1" value="" placeholder="Prob" onchange="calculateServiceTable()" onblur="if(this.value !== '') calculateServiceTable()"></td>
-            <td class="calculated-cell"></td>
-            <td class="calculated-cell"></td>
+            <td class="calculated-cell">--</td>
+            <td class="calculated-cell">--</td>
         `;
         tbody.appendChild(tr);
     }
@@ -460,11 +409,10 @@ function generateServiceRows() {
     // Focus on first input of the last added row
     const lastRow = tbody.lastElementChild;
     if (lastRow) {
-        lastRow.querySelector('td:nth-child(3) input').focus();
+        lastRow.querySelector('td:nth-child(2) input').focus();
     }
     
     calculateServiceTable();
-    updateRowNumbers('tbodyService');
 }
 
 // ========== Random Number Management ==========
@@ -476,7 +424,7 @@ function readRandomNumbersFromTable(type) {
     const numbers = [];
     
     for (const row of rows) {
-        const input = row.querySelector('td:nth-child(3) input');
+        const input = row.querySelector('td:nth-child(2) input');
         if (!input) continue;
         
         const value = parseInt(input.value);
@@ -493,14 +441,12 @@ function addRandomNumberRow(type) {
     const tbody = document.getElementById(tbodyId);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-        <td class="row-num"></td>
         <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, '${type}')" title="Delete row">🗑️</button></td>
         <td><input type="number" class="table-input" min="1" max="100" value="" placeholder="1-100" onchange="updateRandomNumberCounts()"></td>
     `;
     tbody.appendChild(tr);
-    tr.querySelector('td:nth-child(3) input').focus();
+    tr.querySelector('td:nth-child(2) input').focus();
     updateRandomNumberCounts();
-    updateRowNumbers(tbodyId);
 }
 
 function deleteRandomNumberRow(btn, type) {
@@ -512,7 +458,6 @@ function deleteRandomNumberRow(btn, type) {
     }
     btn.closest('tr').remove();
     updateRandomNumberCounts();
-    updateRowNumbers(tbodyId);
 }
 
 function generateRandomNumberRows(type) {
@@ -533,7 +478,6 @@ function generateRandomNumberRows(type) {
     for (let i = 0; i < count; i++) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td class="row-num"></td>
             <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, '${type}')" title="Delete row">🗑️</button></td>
             <td><input type="number" class="table-input" min="1" max="100" value="" placeholder="1-100" onchange="updateRandomNumberCounts()"></td>
         `;
@@ -543,11 +487,10 @@ function generateRandomNumberRows(type) {
     // Focus on first input of the last added row
     const lastRow = tbody.lastElementChild;
     if (lastRow) {
-        lastRow.querySelector('td:nth-child(3) input').focus();
+        lastRow.querySelector('td:nth-child(2) input').focus();
     }
     
     updateRandomNumberCounts();
-    updateRowNumbers(tbodyId);
 }
 
 function updateRandomNumberCounts() {
@@ -630,24 +573,17 @@ function runSimulationFromUI() {
     }
 
         // Map random numbers to times
-        const interarrivalTimes = [0]; // First customer has 0
+    const interarrivalTimes = [0]; // First customer has 0
         for (let i = 0; i < requiredArrCount; i++) {
             const time = mapRandomToTime(arrRns[i], arrivalTable);
-            interarrivalTimes.push(time);
+                interarrivalTimes.push(time);
         }
         
-        const serviceTimes = [];
+    const serviceTimes = [];
         for (let i = 0; i < numCustomers; i++) {
             const time = mapRandomToTime(servRns[i], serviceTable);
-            serviceTimes.push(time);
+                serviceTimes.push(time);
         }
-
-        // Store last-used random numbers and mapped times for Step 5 display
-        lastNumCustomers = numCustomers;
-        lastArrivalRns = arrRns.slice(0, requiredArrCount);
-        lastServiceRns = servRns.slice(0, numCustomers);
-        lastInterarrivalTimes = interarrivalTimes.slice();
-        lastServiceTimes = serviceTimes.slice();
         
         // Run the simulation
         runSimulationWithTimes(numCustomers, interarrivalTimes, serviceTimes);
@@ -703,14 +639,6 @@ function runSimulationWithTimes(n, interarrivalTimes, serviceTimes) {
         timeInSystem[i] = serviceEnd[i] - arrivalTimes[i];
     }
 
-    // Get the random numbers from the input tables
-    const arrivalRns = readRandomNumbersFromTable('arrival');
-    const serviceRns = readRandomNumbersFromTable('service');
-    
-    // Save for potential use in displayDistributionTables
-    lastArrivalRns = [...arrivalRns];
-    lastServiceRns = [...serviceRns];
-    
     // Fill table
     let totalInterarrival = 0;
     let totalService = 0;
@@ -724,35 +652,29 @@ function runSimulationWithTimes(n, interarrivalTimes, serviceTimes) {
         if (i % 2 === 0) {
             tr.style.background = 'rgba(245, 230, 211, 0.4)';
         }
-        
-        // Get the random numbers for this row
-        const arrivalRn = i > 0 ? (arrivalRns[i-1] !== undefined ? arrivalRns[i-1] : '—') : '—';
-        const serviceRn = serviceRns[i] !== undefined ? serviceRns[i] : '—';
-        
-        // Add cells for each column
-        tr.innerHTML = `
-            <td>${i + 1}</td>
-            <td>${arrivalRn}</td>
-            <td>${i === 0 ? '—' : interarrivalTimes[i].toFixed(2)}</td>
-            <td>${serviceRn}</td>
-            <td>${serviceTimes[i].toFixed(2)}</td>
-            <td>${arrivalTimes[i].toFixed(2)}</td>
-            <td>${serviceBegin[i].toFixed(2)}</td>
-            <td>${serviceEnd[i].toFixed(2)}</td>
-            <td>${waitingTimes[i].toFixed(2)}</td>
-            <td>${timeInSystem[i].toFixed(2)}</td>
-            <td>${idleTimes[i].toFixed(2)}</td>
-        `;
-        
-        tbody.appendChild(tr);
-        
-        // Update totals
+
+        const inter = i === 0 ? '—' : interarrivalTimes[i].toString();
+
         totalInterarrival += i === 0 ? 0 : interarrivalTimes[i];
         totalService += serviceTimes[i];
         totalWaiting += waitingTimes[i];
         totalTimeInSystem += timeInSystem[i];
         totalIdle += idleTimes[i];
         if (waitingTimes[i] > 0) numWaited++;
+
+        tr.innerHTML = `
+            <td>${i + 1}</td>
+            <td>${inter}</td>
+            <td>${arrivalTimes[i]}</td>
+            <td>${serviceTimes[i]}</td>
+            <td>${serviceBegin[i]}</td>
+            <td>${serviceEnd[i]}</td>
+            <td>${waitingTimes[i]}</td>
+            <td>${timeInSystem[i]}</td>
+            <td>${idleTimes[i]}</td>
+        `;
+
+        tbody.appendChild(tr);
     }
 
     // Totals row
@@ -761,16 +683,14 @@ function runSimulationWithTimes(n, interarrivalTimes, serviceTimes) {
     totalRow.style.fontWeight = 'bold';
     totalRow.innerHTML = `
         <td>Total</td>
-        <td>—</td>
-        <td>${totalInterarrival.toFixed(2)}</td>
-        <td>—</td>
-        <td>${totalService.toFixed(2)}</td>
+        <td>${totalInterarrival}</td>
+        <td></td>
+        <td>${totalService}</td>
         <td></td>
         <td></td>
-        <td></td>
-        <td>${totalWaiting.toFixed(2)}</td>
-        <td>${totalTimeInSystem.toFixed(2)}</td>
-        <td>${totalIdle.toFixed(2)}</td>
+        <td>${totalWaiting}</td>
+        <td>${totalTimeInSystem}</td>
+        <td>${totalIdle}</td>
     `;
     tbody.appendChild(totalRow);
     
@@ -896,20 +816,10 @@ function displayDistributionTables() {
     if (!distDiv) return;
     
     if (!arrivalTable || !serviceTable) return;
-
-    // We expect the last simulation data to be present in the
-    // global "last*" variables. If not, just show the distributions.
-    const hasRnData =
-        lastNumCustomers > 0 &&
-        lastInterarrivalTimes.length === lastNumCustomers &&
-        lastServiceTimes.length === lastNumCustomers;
     
-    let html = '';
-
-    // ========== ARRIVAL SECTION: Distribution + RN→Interarrival ==========
-    html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; margin-bottom: 30px;">';
-
-    // Left: Arrival Distribution
+    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 30px;">';
+    
+    // Arrival Time Distribution Table
     html += '<div class="table-container">';
     html += '<h3 style="color: #5C4033; margin-top: 0; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #8B4513; padding-bottom: 10px;">Arrival Time Distribution</h3>';
     html += '<table class="editable-table" style="width: 100%;">';
@@ -927,39 +837,8 @@ function displayDistributionTables() {
     }
     
     html += '</tbody></table></div>';
-
-    // Right: Arrival Random Numbers → Interarrival Times (per customer)
-    html += '<div class="table-container">';
-    html += '<h3 style="color: #5C4033; margin-top: 0; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #8B4513; padding-bottom: 10px;">Arrival Random Numbers → Interarrival Time</h3>';
-    html += '<table class="editable-table" style="width: 100%;">';
-    html += '<thead><tr><th>Customer</th><th>Random Number</th><th>Interarrival Time</th></tr></thead>';
-    html += '<tbody>';
-
-    if (hasRnData) {
-        for (let i = 0; i < lastNumCustomers; i++) {
-            let rn = '—';
-            let inter = lastInterarrivalTimes[i];
-
-            // Customer 1 has no RN and interarrival is 0
-            if (i > 0) {
-                rn = lastArrivalRns[i - 1] != null ? lastArrivalRns[i - 1] : '—';
-            }
-
-            html += `<tr>
-                <td>${i + 1}</td>
-                <td>${rn}</td>
-                <td>${typeof inter === 'number' ? inter.toFixed(3) : '—'}</td>
-            </tr>`;
-        }
-    }
-
-    html += '</tbody></table></div>';
-    html += '</div>'; // end arrival grid
-
-    // ========== SERVICE SECTION: Distribution + RN→Service Time ==========
-    html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; margin-bottom: 30px;">';
-
-    // Left: Service Distribution
+    
+    // Service Time Distribution Table
     html += '<div class="table-container">';
     html += '<h3 style="color: #5C4033; margin-top: 0; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #8B4513; padding-bottom: 10px;">Service Time Distribution</h3>';
     html += '<table class="editable-table" style="width: 100%;">';
@@ -977,28 +856,7 @@ function displayDistributionTables() {
     }
     
     html += '</tbody></table></div>';
-
-    // Right: Service Random Numbers → Service Time (per customer)
-    html += '<div class="table-container">';
-    html += '<h3 style="color: #5C4033; margin-top: 0; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #8B4513; padding-bottom: 10px;">Service Random Numbers → Service Time</h3>';
-    html += '<table class="editable-table" style="width: 100%;">';
-    html += '<thead><tr><th>Customer</th><th>Random Number</th><th>Service Time</th></tr></thead>';
-    html += '<tbody>';
-
-    if (hasRnData) {
-        for (let i = 0; i < lastNumCustomers; i++) {
-            const rn = lastServiceRns[i] != null ? lastServiceRns[i] : '—';
-            const st = lastServiceTimes[i];
-            html += `<tr>
-                <td>${i + 1}</td>
-                <td>${rn}</td>
-                <td>${typeof st === 'number' ? st.toFixed(3) : '—'}</td>
-            </tr>`;
-        }
-    }
-
-    html += '</tbody></table></div>';
-    html += '</div>'; // end service grid
+    html += '</div>';
     
     distDiv.innerHTML = html;
 }
@@ -1050,134 +908,11 @@ function clearResults() {
     alert('Results cleared. You can run another simulation.');
 }
 
-// ========== State Persistence (tab + user inputs) ==========
-
-function collectUserInputs() {
-    const inputs = {};
-    const fields = document.querySelectorAll('input, select, textarea');
-    let hasValue = false;
-
-    fields.forEach(el => {
-        if (!el.id) return;
-        const val = el.value;
-        if (val !== '' && val != null) {
-            hasValue = true;
-        }
-        inputs[el.id] = val;
-    });
-
-    return { inputs, hasValue };
-}
-
-function collectTableBodies() {
-    const bodies = {};
-    const tbodies = document.querySelectorAll('tbody[id]');
-    let hasContent = false;
-
-    tbodies.forEach(tb => {
-        const html = tb.innerHTML;
-        if (html && html.trim().length > 0) {
-            hasContent = true;
-        }
-        bodies[tb.id] = html;
-    });
-
-    return { bodies, hasContent };
-}
-
-function savePageState() {
-    try {
-        const { inputs, hasValue } = collectUserInputs();
-        const { bodies, hasContent } = collectTableBodies();
-
-        // If user hasn't entered anything meaningful, don't persist a state
-        if (!hasValue && !hasContent) {
-            localStorage.removeItem(STATE_KEY);
-            return;
-        }
-
-        const state = {
-            currentTab,
-            inputs,
-            bodies,
-            hasUserData: true
-        };
-        localStorage.setItem(STATE_KEY, JSON.stringify(state));
-    } catch (e) {
-        // Fail silently; persistence is a convenience feature
-    }
-}
-
-function restorePageState() {
-    try {
-        const raw = localStorage.getItem(STATE_KEY);
-        if (!raw) return;
-
-        const state = JSON.parse(raw);
-        if (!state || !state.hasUserData) return;
-
-        // Restore inputs/selects/textareas
-        if (state.inputs) {
-            Object.keys(state.inputs).forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.value = state.inputs[id];
-                }
-            });
-        }
-
-        // Restore table bodies (arrival/service/random tables)
-        if (state.bodies) {
-            Object.keys(state.bodies).forEach(id => {
-                const tb = document.getElementById(id);
-                if (tb && typeof state.bodies[id] === 'string') {
-                    tb.innerHTML = state.bodies[id];
-                    try {
-                        tb.querySelectorAll('td.calculated-cell').forEach(c => c.textContent = '');
-                    } catch (e) {}
-                }
-            });
-        }
-
-        // Restore tab index (after DOM is ready)
-        if (typeof state.currentTab === 'number') {
-            switchTab(state.currentTab);
-        }
-
-        // Recalculate derived cells based on restored data
-        setTimeout(() => {
-            try {
-                const arrivalDist = readDistributionFromTable('tbodyArrival');
-                if (arrivalDist.length > 0) {
-                    calculateArrivalTable();
-                }
-            } catch (e) {}
-
-            try {
-                const serviceDist = readDistributionFromTable('tbodyService');
-                if (serviceDist.length > 0) {
-                    calculateServiceTable();
-                }
-            } catch (e) {}
-
-            updateRandomNumberCounts();
-        }, 50);
-    } catch (e) {
-        // If restore fails, ignore and let page behave normally
-    }
-}
-
-// Save state when the user leaves or refreshes the page
-window.addEventListener('beforeunload', savePageState);
-
 // ========== Initialization ==========
 
-// Initialize tables on page load and restore any saved state
+// Initialize tables on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // First try to restore any previously saved state
-    restorePageState();
-
-    // Then, if there were default values, calculate their tables once
+    // Calculate initial tables if they have default values (silently, no alerts)
     setTimeout(() => {
         try {
             const arrivalDist = readDistributionFromTable('tbodyArrival');
