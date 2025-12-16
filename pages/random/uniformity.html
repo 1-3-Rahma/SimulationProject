@@ -2,25 +2,67 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Uniformity Test (Chi-Square)</title>
+    <title>Chi-Square Uniformity Test</title>
     <link rel="stylesheet" href="../../css/main.css">
 </head>
 <body>
 
 <div class="container">
+
     <h1>Uniformity Test (Chi-Square)</h1>
-
-    <p class="description">
-        This test checks whether the generated random numbers follow a uniform distribution.
-    </p>
-
-    <button class="btn">Generate Random Numbers</button>
-    <button class="btn">Calculate Chi-Square</button>
 
     <button class="btn back-btn" onclick="window.location.href='../../index.html'">
         Back to Main Menu
     </button>
+    
+    <!-- INPUTS -->
+    <div class="input-group">
+        <label>n (Total number of random numbers)</label>
+        <input type="number" id="n" min="1">
+        <button class="btn" onclick="generateRandomInputs()">Generate Inputs</button>
+    </div>
+
+    <div id="randomInputs"></div>
+
+    <div class="input-group">
+        <label>k (Number of intervals)</label>
+        <input type="number" id="k" min="1">
+    </div>
+
+    <div class="input-group">
+        <label>α (Level of significance)</label>
+        <input type="number" id="alpha" step="0.01">
+    </div>
+
+    <button class="btn" onclick="runChiSquare()">Run Chi-Square Test</button>
+
+    <!-- TABS -->
+    <div class="tabs hidden" id="tabs">
+
+        <div class="tab-buttons">
+            <button class="tab-btn" onclick="openTab(0)">Step 1</button>
+            <button class="tab-btn" onclick="openTab(1)">Step 2</button>
+            <button class="tab-btn" onclick="openTab(2)">Step 3</button>
+            <button class="tab-btn" onclick="openTab(3)">Step 4</button>
+            <button class="tab-btn" onclick="openTab(4)">Step 5</button>
+            <button class="tab-btn" onclick="openTab(5)">Decision</button>
+
+        </div>
+
+        <div class="tab-content" id="tab0"></div>
+        <div class="tab-content hidden" id="tab1"></div>
+        <div class="tab-content hidden" id="tab2"></div>
+        <div class="tab-content hidden" id="tab3"></div>
+        <div class="tab-content" id="tab4"></div>
+        <div class="tab-content" id="tab5"></div>
+
+
+    </div>
+
+   
+
 </div>
 
+<script src="../../js/chiSquare.js"></script>
 </body>
 </html>
