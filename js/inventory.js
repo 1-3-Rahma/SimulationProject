@@ -296,6 +296,19 @@ function switchRandomMethod(method) {
     }
 }
 
+function generateLCGDetailed(a, c, m, initialZ, count) {
+    const results = [];
+    let z = initialZ;
+    
+    for (let i = 0; i < count; i++) {
+        z = (a * z + c) % m;
+        const u = z / m;
+        results.push({ i: i + 1, z: z, u: u });
+    }
+    
+    return results;
+}
+
 function generateLCGRandoms() {
     const a = parseFloat(document.getElementById('lcgA').value);
     const c = parseFloat(document.getElementById('lcgC').value);
@@ -314,17 +327,67 @@ function generateLCGRandoms() {
         return;
     }
     
+    // Generate detailed data for display (raw values for table)
+    const demandDetailed = generateLCGDetailed(a, c, m, seed, demandCount);
+    const leadTimeDetailed = generateLCGDetailed(a, c, m, seed + demandCount, leadTimeCount);
+    
+    // Generate actual random numbers using original function (with approximation logic)
     const demandRandoms = generateLCG(a, c, m, seed, demandCount);
     const leadTimeRandoms = generateLCG(a, c, m, seed + demandCount, leadTimeCount);
     
-    // Convert 0-1 to 1-100 range (same as Multi-server)
-    lcgDemandRandoms = demandRandoms.map(n => Math.floor(n * 100) + 1);
-    lcgLeadTimeRandoms = leadTimeRandoms.map(n => Math.floor(n * 100) + 1);
+    // Convert 0-100 range (from approximation) to 1-100 range for simulation
+    lcgDemandRandoms = demandRandoms.map(n => Math.floor(n) + 1);
+    lcgLeadTimeRandoms = leadTimeRandoms.map(n => Math.floor(n) + 1);
     
-    document.getElementById('lcgDemandPreview').textContent = lcgDemandRandoms.map(n => String(n).padStart(2, '0')).join(', ');
-    document.getElementById('lcgLeadTimePreview').textContent = lcgLeadTimeRandoms.map(n => String(n).padStart(2, '0')).join(', ');
+    // Display detailed tables
+    displayLCGTable('lcgDemandPreview', demandDetailed, seed);
+    displayLCGTable('lcgLeadTimePreview', leadTimeDetailed, seed + demandCount);
+    
     document.getElementById('lcgResults').classList.remove('hidden');
     clearError();
+}
+
+function displayLCGTable(containerId, data, initialSeed) {
+    const container = document.getElementById(containerId);
+    let html = '<div style="overflow-x: auto;"><table style="border-collapse: collapse; width: 100%; margin: 10px 0;">';
+    html += '<thead><tr style="background-color: #f0f0f0;"><th style="border: 1px solid #ddd; padding: 8px;">i</th><th style="border: 1px solid #ddd; padding: 8px;">Z<sub>i</sub></th><th style="border: 1px solid #ddd; padding: 8px;">U<sub>i</sub></th></tr></thead>';
+    html += '<tbody>';
+    
+    // Add seed row (i=0)
+    html += `<tr><td style="border: 1px solid #ddd; padding: 8px;">0</td><td style="border: 1px solid #ddd; padding: 8px;">${initialSeed}</td><td style="border: 1px solid #ddd; padding: 8px;">-</td></tr>`;
+    
+    // Add generated rows
+    data.forEach(item => {
+        html += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${item.i}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.z}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.u.toFixed(4)}</td></tr>`;
+    });
+    
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+function generateMidSquareDetailed(seed, count) {
+    const results = [];
+    let current = seed;
+    
+    for (let i = 0; i < count; i++) {
+        // Square the current Z_i
+        const zSquared = current * current;
+        const squaredStr = zSquared.toString().padStart(8, '0');
+        const middle = squaredStr.substring(2, 6);
+        let nextZ = parseInt(middle, 10);
+        
+        // If we get 0, use a fallback seed
+        if (nextZ === 0) {
+            nextZ = (seed + i + 1) % 10000;
+            if (nextZ === 0) nextZ = 1; // Ensure non-zero
+        }
+        
+        const u = nextZ / 10000;
+        results.push({ i: i + 1, z: nextZ, u: u, zSquared: zSquared });
+        current = nextZ;
+    }
+    
+    return results;
 }
 
 function generateMidSquareRandoms() {
@@ -342,17 +405,45 @@ function generateMidSquareRandoms() {
         return;
     }
     
+    // Generate detailed data for display (raw values for table)
+    const demandDetailed = generateMidSquareDetailed(seed, demandCount);
+    const leadTimeDetailed = generateMidSquareDetailed(seed + 1000, leadTimeCount);
+    
+    // Generate actual random numbers using original function (with approximation logic)
     const demandRandoms = generateMidSquare(seed, demandCount);
     const leadTimeRandoms = generateMidSquare(seed + 1000, leadTimeCount);
     
-    // Convert 0-1 to 1-100 range (same as Multi-server)
-    midSquareDemandRandoms = demandRandoms.map(n => Math.floor(n * 100) + 1);
-    midSquareLeadTimeRandoms = leadTimeRandoms.map(n => Math.floor(n * 100) + 1);
+    // Convert 0-100 range (from approximation) to 1-100 range for simulation
+    midSquareDemandRandoms = demandRandoms.map(n => Math.floor(n) + 1);
+    midSquareLeadTimeRandoms = leadTimeRandoms.map(n => Math.floor(n) + 1);
     
-    document.getElementById('midSquareDemandPreview').textContent = midSquareDemandRandoms.map(n => String(n).padStart(2, '0')).join(', ');
-    document.getElementById('midSquareLeadTimePreview').textContent = midSquareLeadTimeRandoms.map(n => String(n).padStart(2, '0')).join(', ');
+    // Display detailed tables
+    displayMidSquareTable('midSquareDemandPreview', demandDetailed, seed);
+    displayMidSquareTable('midSquareLeadTimePreview', leadTimeDetailed, seed + 1000);
+    
     document.getElementById('midSquareResults').classList.remove('hidden');
     clearError();
+}
+
+function displayMidSquareTable(containerId, data, initialSeed) {
+    const container = document.getElementById(containerId);
+    let html = '<div style="overflow-x: auto;"><table style="border-collapse: collapse; width: 100%; margin: 10px 0;">';
+    html += '<thead><tr style="background-color: #f0f0f0;"><th style="border: 1px solid #ddd; padding: 8px;">i</th><th style="border: 1px solid #ddd; padding: 8px;">Z<sub>i</sub></th><th style="border: 1px solid #ddd; padding: 8px;">U<sub>i</sub></th><th style="border: 1px solid #ddd; padding: 8px;">Z<sub>i</sub><sup>2</sup></th></tr></thead>';
+    html += '<tbody>';
+    
+    // Add seed row (i=0)
+    const seedSquared = initialSeed * initialSeed;
+    html += `<tr><td style="border: 1px solid #ddd; padding: 8px;">0</td><td style="border: 1px solid #ddd; padding: 8px;">${initialSeed}</td><td style="border: 1px solid #ddd; padding: 8px;">-</td><td style="border: 1px solid #ddd; padding: 8px;">${seedSquared.toLocaleString()}</td></tr>`;
+    
+    // Add generated rows
+    data.forEach(item => {
+        // Z_i^2 is the square of Z_i (which will be used to generate the next Z)
+        const zSquared = item.z * item.z;
+        html += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${item.i}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.z}</td><td style="border: 1px solid #ddd; padding: 8px;">${item.u.toFixed(4)}</td><td style="border: 1px solid #ddd; padding: 8px;">${zSquared.toLocaleString()}</td></tr>`;
+    });
+    
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
 }
 
 function useLCGNumbers() {
