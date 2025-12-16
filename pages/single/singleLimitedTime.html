@@ -371,8 +371,10 @@
                     <thead>
                         <tr>
                             <th>Customer</th>
+                            <th>Arrival RN</th>
                             <th>Interarrival Time</th>
                             <th>Arrival Time</th>
+                            <th>Service RN</th>
                             <th>Service Time</th>
                             <th>Time Service Begins</th>
                             <th>Time Service Ends</th>
@@ -470,10 +472,10 @@
                     
                     const arrRandoms = generateLCG(a, c, m, seed, arrCount);
                     const servRandoms = generateLCG(a, c, m, seed + arrCount, servCount);
-                    
-                    // Convert 0-1 to 1-100 range
-                    arrNumbers = arrRandoms.map(n => Math.floor(n * 100) + 1);
-                    servNumbers = servRandoms.map(n => Math.floor(n * 100) + 1);
+
+                    // Random numbers are already in 0-100 range with approximation applied
+                    arrNumbers = arrRandoms;
+                    servNumbers = servRandoms;
                     
                 } else if (method === 'MidSquare') {
                     const seed = parseInt(document.getElementById('midSquareSeed').value);
@@ -485,10 +487,10 @@
                     
                     const arrRandoms = generateMidSquare(seed, arrCount);
                     const servRandoms = generateMidSquare(seed + 1000, servCount);
-                    
-                    // Convert 0-1 to 1-100 range
-                    arrNumbers = arrRandoms.map(n => Math.floor(n * 100) + 1);
-                    servNumbers = servRandoms.map(n => Math.floor(n * 100) + 1);
+
+                    // Random numbers are already in 0-100 range with approximation applied
+                    arrNumbers = arrRandoms;
+                    servNumbers = servRandoms;
                 }
                 
                 // Display results
@@ -511,27 +513,27 @@
             }
             
             // Parse and populate arrival table
-            const arrNums = arrNumbers.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n >= 1 && n <= 100);
+            const arrNums = arrNumbers.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n >= 0 && n <= 100);
             const tbodyArr = document.getElementById('tbodyRnArr');
             tbodyArr.innerHTML = '';
             arrNums.forEach(num => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'arrival')" title="Delete row">🗑️</button></td>
-                    <td><input type="number" class="table-input" min="1" max="100" value="${num}" placeholder="1-100" onchange="updateRandomNumberCounts()"></td>
+                    <td><input type="number" class="table-input" min="0" max="100" step="0.01" value="${num}" placeholder="0-100" onchange="updateRandomNumberCounts()"></td>
                 `;
                 tbodyArr.appendChild(tr);
             });
-            
+
             // Parse and populate service table
-            const servNums = servNumbers.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n >= 1 && n <= 100);
+            const servNums = servNumbers.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n >= 0 && n <= 100);
             const tbodyServ = document.getElementById('tbodyRnServ');
             tbodyServ.innerHTML = '';
             servNums.forEach(num => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'service')" title="Delete row">🗑️</button></td>
-                    <td><input type="number" class="table-input" min="1" max="100" value="${num}" placeholder="1-100" onchange="updateRandomNumberCounts()"></td>
+                    <td><input type="number" class="table-input" min="0" max="100" step="0.01" value="${num}" placeholder="0-100" onchange="updateRandomNumberCounts()"></td>
                 `;
                 tbodyServ.appendChild(tr);
             });

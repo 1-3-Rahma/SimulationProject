@@ -93,7 +93,7 @@ function weightedAverage(dist) {
 
 // ========== Simulation Core ==========
 
-function runCallCenterSimulation(numCustomers, arrivalTable, s1Table, s2Table, arrRns, servRns, preference) {
+function runCallCenterSimulation(numCustomers, arrivalTable, s1Table, s2Table, arrRns, servRns, preference, arrRnsDisplay = null, servRnsDisplay = null) {
     if (arrRns.length < Math.max(0, numCustomers - 1)) {
         throw new Error(`Need at least ${Math.max(0, numCustomers - 1)} arrival random numbers.`);
     }
@@ -158,14 +158,18 @@ function runCallCenterSimulation(numCustomers, arrivalTable, s1Table, s2Table, a
         const endService = startService + servTime;
         serversAvailable[serverId] = endService;
 
+        // Use display values for showing in the table, but keep null for first customer
+        const displayRnArr = rnArr === null ? null : (arrRnsDisplay ? arrRnsDisplay[i - 2] : rnArr);
+        const displayRnServ = servRnsDisplay ? servRnsDisplay[i - 1] : rnServ;
+
         results.push({
             cust: i,
-            rn_arr: rnArr, // null for first customer (shows '--')
+            rn_arr: displayRnArr, // null for first customer (shows '--')
             arr_interval: arrInterval, // null for first customer (shows '--')
             arrival_time: parseFloat(arrivalTime.toFixed(3)), // 0.000 for first customer
             server: serverId + 1,
             server_name: serverId === 0 ? 'Server 1' : 'Server 2',
-            rn_serv: rnServ,
+            rn_serv: displayRnServ,
             service_time: servTime,
             start: parseFloat(startService.toFixed(3)),
             wait: parseFloat(wait.toFixed(3)),
@@ -539,22 +543,48 @@ function buildServiceTables() {
 
 // ========== Simulation Execution ==========
 
-function readRandomNumbersFromTable(type) {
+function readRandomNumbersFromTable(type, forDisplay = false) {
     const tbodyId = type === 'arrival' ? 'tbodyRnArr' : 'tbodyRnServ';
     const tbody = document.getElementById(tbodyId);
     const rows = tbody.querySelectorAll('tr');
     const numbers = [];
-    
+
     for (const row of rows) {
         const input = row.querySelector('td:nth-child(2) input');
         if (!input) continue;
-        
-        const value = parseInt(input.value);
-        if (!isNaN(value) && value >= 1 && value <= 100) {
-            numbers.push(value);
+
+        const rawValue = parseFloat(input.value);
+        if (isNaN(rawValue)) continue;
+
+        // Restrict to 0-100 range
+        if (rawValue < 0 || rawValue > 100) continue;
+
+        // Process the value (round decimals)
+        let processedValue = rawValue;
+
+        // Handle decimal rounding (but don't round 0)
+        if (rawValue !== 0 && rawValue % 1 !== 0) { // Has decimal part and is not 0
+            const decimalPart = Math.round((rawValue % 1) * 100) / 100; // Round to 2 decimal places to avoid floating point issues
+            if (decimalPart >= 0.5 && decimalPart <= 0.9) {
+                // Round up to next greatest integer
+                processedValue = Math.ceil(rawValue);
+            } else if (decimalPart >= 0.1 && decimalPart <= 0.4) {
+                // Round down (floor)
+                processedValue = Math.floor(rawValue);
+            }
+            // Note: decimals 0.0-0.09 and 0.91-0.99 are not explicitly handled, so they remain as parsed
+        }
+
+        if (forDisplay) {
+            // For display purposes, return the processed value (rounded, but 0 stays as 0)
+            numbers.push(processedValue);
+        } else {
+            // For calculation purposes, treat 0 as 100, others as processed
+            const normalizedValue = (processedValue === 0) ? 100 : processedValue;
+            numbers.push(normalizedValue);
         }
     }
-    
+
     return numbers;
 }
 
@@ -564,7 +594,7 @@ function addRandomNumberRow(type) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, '${type}')" title="Delete row">🗑️</button></td>
-        <td><input type="number" class="table-input" min="1" max="100" value="" placeholder="1-100" onchange="updateRandomNumberCounts()"></td>
+        <td><input type="number" class="table-input" min="0" max="100" step="0.01" value="" placeholder="0-100" onchange="updateRandomNumberCounts()"></td>
     `;
     tbody.appendChild(tr);
     tr.querySelector('td:nth-child(2) input').focus();
@@ -601,7 +631,7 @@ function generateRandomNumberRows(type) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, '${type}')" title="Delete row">🗑️</button></td>
-            <td><input type="number" class="table-input" min="1" max="100" value="" placeholder="1-100" onchange="updateRandomNumberCounts()"></td>
+            <td><input type="number" class="table-input" min="0" max="100" step="0.01" value="" placeholder="0-100" onchange="updateRandomNumberCounts()"></td>
         `;
         tbody.appendChild(tr);
     }
@@ -616,8 +646,8 @@ function generateRandomNumberRows(type) {
 }
 
 function updateRandomNumberCounts() {
-    const arrNumbers = readRandomNumbersFromTable('arrival');
-    const servNumbers = readRandomNumbersFromTable('service');
+    const arrNumbers = readRandomNumbersFromTable('arrival', true); // Use display values for UI
+    const servNumbers = readRandomNumbersFromTable('service', true); // Use display values for UI
     
     document.getElementById('arrivalCount').textContent = `Count: ${arrNumbers.length} numbers`;
     document.getElementById('serviceCount').textContent = `Count: ${servNumbers.length} numbers`;
@@ -674,9 +704,11 @@ function runSimulationFromUI() {
         }
         
         // Read random numbers from table cells
-        const arrRns = readRandomNumbersFromTable('arrival');
-        const servRns = readRandomNumbersFromTable('service');
-        
+        const arrRns = readRandomNumbersFromTable('arrival'); // For calculations (0 becomes 100)
+        const servRns = readRandomNumbersFromTable('service'); // For calculations (0 becomes 100)
+        const arrRnsDisplay = readRandomNumbersFromTable('arrival', true); // For display (processed, 0 stays 0)
+        const servRnsDisplay = readRandomNumbersFromTable('service', true); // For display (processed, 0 stays 0)
+
         // Validate random numbers count
         const requiredArrCount = Math.max(0, numCustomers - 1);
         if (arrRns.length < requiredArrCount) {
@@ -684,16 +716,16 @@ function runSimulationFromUI() {
             switchTab(3);
             return;
         }
-        
+
         if (servRns.length < numCustomers) {
             alert(`Need at least ${numCustomers} service random numbers (one per customer). Currently have ${servRns.length}.`);
             switchTab(3);
             return;
         }
-        
+
         const preference = document.querySelector('input[name="preference"]:checked').value;
-        
-        const simData = runCallCenterSimulation(numCustomers, arrivalTable, s1Table, s2Table, arrRns, servRns, preference);
+
+        const simData = runCallCenterSimulation(numCustomers, arrivalTable, s1Table, s2Table, arrRns, servRns, preference, arrRnsDisplay, servRnsDisplay);
         
         populateResults(simData);
         switchTab(4);
