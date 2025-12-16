@@ -48,6 +48,16 @@ function selectOption(type) {
             <button class="btn small" onclick="chooseSub('multi-time')">Limited by Time</button>
         `;
     }
+
+    if (type === "random") {
+        sub.classList.remove("hidden");
+        sub.innerHTML = `
+            <h3>Random Numbers Test Options</h3>
+            <button class="btn small" onclick="goToRandomTest('uniformity')">Uniformity Test (Chi-Square)</button>
+            <button class="btn small" onclick="goToRandomTest('dependency')">Dependency Test</button>
+        `;
+    }
+    
 }
 
 function chooseSub(choice) {
@@ -86,8 +96,11 @@ function chooseSub(choice) {
 
 }
 
-function startSimulation() {
-    // This function is kept for backward compatibility but is no longer used
-    // All flows (multi-customers, multi-time) now navigate directly in chooseSub()
-    alert("Navigation path not configured. Please use the sub-option buttons.");
+function goToRandomTest(testType) {
+    if (testType === "uniformity") {
+        window.location.href = "pages/random/uniformity.html";
+    } 
+    else if (testType === "dependency") {
+        window.location.href = "pages/random/dependency.html";
+    }
 }
