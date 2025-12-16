@@ -63,6 +63,8 @@
                 <h2>Step 2: Demand Distribution</h2>
                 <div class="table-controls">
                     <button class="btn btn-secondary" onclick="addDemandRow()">+ Add Row</button>
+                    <input type="number" id="demandRowCount" min="1" max="100" value="1" placeholder="Rows" style="width: 80px; margin: 0 5px; padding: 5px;">
+                    <button class="btn btn-secondary" onclick="addMultipleDemandRows()">Generate Rows</button>
                 </div>
                 <table id="demandTable">
                     <thead>
@@ -80,6 +82,8 @@
                 <h2>Lead Time Distribution</h2>
                 <div class="table-controls">
                     <button class="btn btn-secondary" onclick="addLeadTimeRow()">+ Add Row</button>
+                    <input type="number" id="leadTimeRowCount" min="1" max="100" value="1" placeholder="Rows" style="width: 80px; margin: 0 5px; padding: 5px;">
+                    <button class="btn btn-secondary" onclick="addMultipleLeadTimeRows()">Generate Rows</button>
                 </div>
                 <table id="leadTimeTable">
                     <thead>
@@ -108,7 +112,8 @@
 
                 <div class="method-tabs">
                     <button class="method-tab active" id="tabManual" onclick="switchRandomMethod('manual')">Manual Random Entry</button>
-                    <button class="method-tab" id="tabAuto" onclick="switchRandomMethod('auto')">Auto-Generate Random Numbers</button>
+                    <button class="method-tab" id="tabLCG" onclick="switchRandomMethod('LCG')">LCG Generation</button>
+                    <button class="method-tab" id="tabMidSquare" onclick="switchRandomMethod('MidSquare')">MidSquare Generation</button>
                 </div>
 
                 <!-- Manual Entry -->
@@ -132,31 +137,101 @@
                     <div id="leadTimeRandoms" class="random-numbers-grid"></div>
                 </div>
 
-                <!-- Auto Generation -->
-                <div id="autoRandomSection" class="method-section">
-                    <p>Select counts and generate uniform random digits (00–99).</p>
+                <!-- LCG Generation -->
+                <div id="lcgRandomSection" class="method-section">
+                    <h3>Linear Congruential Generator (LCG)</h3>
+                    <p>Generate random numbers using LCG method</p>
+                    
+                    <div class="gen-params">
+                        <h4>LCG Parameters</h4>
+                        <div class="params-grid">
+                            <div class="input-group">
+                                <label>Multiplier (a):</label>
+                                <input type="number" id="lcgA" min="0" placeholder="e.g., 1664525">
+                            </div>
+                            <div class="input-group">
+                                <label>Increment (c):</label>
+                                <input type="number" id="lcgC" min="0" placeholder="e.g., 1013904223">
+                            </div>
+                            <div class="input-group">
+                                <label>Modulus (m):</label>
+                                <input type="number" id="lcgM" min="1" placeholder="e.g., 2^32">
+                            </div>
+                            <div class="input-group">
+                                <label>Initial Seed (Z₀):</label>
+                                <input type="number" id="lcgSeed" min="0" placeholder="e.g., 12345">
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="input-grid">
                         <div class="input-group">
-                            <label>Demand Random Count:</label>
-                            <input type="number" id="autoDemandCount" value="15" min="1">
+                            <label>Number of Demand Random Numbers:</label>
+                            <input type="number" id="lcgDemandCount" min="1" placeholder="e.g., 15">
                         </div>
                         <div class="input-group">
-                            <label>Lead Time Random Count:</label>
-                            <input type="number" id="autoLeadCount" value="5" min="1">
+                            <label>Number of Lead Time Random Numbers:</label>
+                            <input type="number" id="lcgLeadTimeCount" min="1" placeholder="e.g., 5">
                         </div>
                     </div>
-                    <div class="button-group">
-                        <button class="btn btn-primary" onclick="generateAutoRandoms()">Generate Random Digits</button>
+                    
+                    <button class="btn btn-primary" onclick="generateLCGRandoms()">Generate Random Numbers</button>
+                    
+                    <div id="lcgResults" class="generated-results hidden">
+                        <h4>Generated Numbers</h4>
+                        <div class="results-display">
+                            <div>
+                                <strong>Demand Numbers:</strong>
+                                <div id="lcgDemandPreview" class="random-preview"></div>
+                            </div>
+                            <div>
+                                <strong>Lead Time Numbers:</strong>
+                                <div id="lcgLeadTimePreview" class="random-preview"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="useLCGNumbers()">Use These Numbers</button>
                     </div>
-                    <div class="random-display">
-                        <div>
-                            <h3>Demand Digits</h3>
-                            <div id="autoDemandPreview" class="random-preview"></div>
+                </div>
+
+                <!-- MidSquare Generation -->
+                <div id="midSquareRandomSection" class="method-section">
+                    <h3>Mid-Square Method</h3>
+                    <p>Generate random numbers using Mid-Square method</p>
+                    
+                    <div class="gen-params">
+                        <h4>Mid-Square Parameters</h4>
+                        <div class="input-group">
+                            <label>Seed (4-digit, 1000-9999):</label>
+                            <input type="number" id="midSquareSeed" min="1000" max="9999" placeholder="e.g., 1234">
                         </div>
-                        <div>
-                            <h3>Lead Time Digits</h3>
-                            <div id="autoLeadPreview" class="random-preview"></div>
+                    </div>
+                    
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Number of Demand Random Numbers:</label>
+                            <input type="number" id="midSquareDemandCount" min="1" placeholder="e.g., 15">
                         </div>
+                        <div class="input-group">
+                            <label>Number of Lead Time Random Numbers:</label>
+                            <input type="number" id="midSquareLeadTimeCount" min="1" placeholder="e.g., 5">
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="generateMidSquareRandoms()">Generate Random Numbers</button>
+                    
+                    <div id="midSquareResults" class="generated-results hidden">
+                        <h4>Generated Numbers</h4>
+                        <div class="results-display">
+                            <div>
+                                <strong>Demand Numbers:</strong>
+                                <div id="midSquareDemandPreview" class="random-preview"></div>
+                            </div>
+                            <div>
+                                <strong>Lead Time Numbers:</strong>
+                                <div id="midSquareLeadTimePreview" class="random-preview"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="useMidSquareNumbers()">Use These Numbers</button>
                     </div>
                 </div>
 
@@ -210,7 +285,9 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="../js/randomNumbers.js"></script>
     <script src="../js/inventory.js"></script>
 </body>
 </html>
+
 

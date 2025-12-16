@@ -5,6 +5,10 @@ let currentStep = 1;
 let randomMethod = 'manual';
 let autoDemandRandoms = [];
 let autoLeadRandoms = [];
+let lcgDemandRandoms = [];
+let lcgLeadTimeRandoms = [];
+let midSquareDemandRandoms = [];
+let midSquareLeadTimeRandoms = [];
 
 function init() {
     demandData = [
@@ -128,6 +132,19 @@ function addDemandRow() {
     updateDemandTable();
 }
 
+function addMultipleDemandRows() {
+    const count = parseInt(document.getElementById('demandRowCount').value) || 1;
+    if (count < 1 || count > 100) {
+        showError('Please enter a valid number between 1 and 100.');
+        return;
+    }
+    for (let i = 0; i < count; i++) {
+        demandData.push({ demand: demandData.length, prob: 0 });
+    }
+    updateDemandTable();
+    clearError();
+}
+
 function removeDemandRow(index) {
     demandData.splice(index, 1);
     updateDemandTable();
@@ -136,6 +153,19 @@ function removeDemandRow(index) {
 function addLeadTimeRow() {
     leadTimeData.push({ leadTime: leadTimeData.length, prob: 0 });
     updateLeadTimeTable();
+}
+
+function addMultipleLeadTimeRows() {
+    const count = parseInt(document.getElementById('leadTimeRowCount').value) || 1;
+    if (count < 1 || count > 100) {
+        showError('Please enter a valid number between 1 and 100.');
+        return;
+    }
+    for (let i = 0; i < count; i++) {
+        leadTimeData.push({ leadTime: leadTimeData.length, prob: 0 });
+    }
+    updateLeadTimeTable();
+    clearError();
 }
 
 function removeLeadTimeRow(index) {
@@ -257,24 +287,125 @@ function switchRandomMethod(method) {
     if (method === 'manual') {
         document.getElementById('tabManual').classList.add('active');
         document.getElementById('manualRandomSection').classList.add('active');
-    } else {
-        document.getElementById('tabAuto').classList.add('active');
-        document.getElementById('autoRandomSection').classList.add('active');
+    } else if (method === 'LCG') {
+        document.getElementById('tabLCG').classList.add('active');
+        document.getElementById('lcgRandomSection').classList.add('active');
+    } else if (method === 'MidSquare') {
+        document.getElementById('tabMidSquare').classList.add('active');
+        document.getElementById('midSquareRandomSection').classList.add('active');
     }
 }
 
-function generateAutoRandoms() {
-    const demandCount = parseInt(document.getElementById('autoDemandCount').value) || 0;
-    const leadCount = parseInt(document.getElementById('autoLeadCount').value) || 0;
-    if (demandCount <= 0 || leadCount <= 0) {
-        showError('Please enter positive counts for auto-generated random digits.');
+function generateLCGRandoms() {
+    const a = parseFloat(document.getElementById('lcgA').value);
+    const c = parseFloat(document.getElementById('lcgC').value);
+    const m = parseFloat(document.getElementById('lcgM').value);
+    const seed = parseFloat(document.getElementById('lcgSeed').value);
+    const demandCount = parseInt(document.getElementById('lcgDemandCount').value) || 0;
+    const leadTimeCount = parseInt(document.getElementById('lcgLeadTimeCount').value) || 0;
+    
+    if (isNaN(a) || isNaN(c) || isNaN(m) || isNaN(seed)) {
+        showError('Please enter all LCG parameters.');
         return;
     }
-    autoDemandRandoms = Array.from({ length: demandCount }, () => Math.floor(Math.random() * 100));
-    autoLeadRandoms = Array.from({ length: leadCount }, () => Math.floor(Math.random() * 100));
+    
+    if (demandCount <= 0 || leadTimeCount <= 0) {
+        showError('Please enter positive counts for random numbers.');
+        return;
+    }
+    
+    const demandRandoms = generateLCG(a, c, m, seed, demandCount);
+    const leadTimeRandoms = generateLCG(a, c, m, seed + demandCount, leadTimeCount);
+    
+    // Convert 0-1 to 1-100 range (same as Multi-server)
+    lcgDemandRandoms = demandRandoms.map(n => Math.floor(n * 100) + 1);
+    lcgLeadTimeRandoms = leadTimeRandoms.map(n => Math.floor(n * 100) + 1);
+    
+    document.getElementById('lcgDemandPreview').textContent = lcgDemandRandoms.map(n => String(n).padStart(2, '0')).join(', ');
+    document.getElementById('lcgLeadTimePreview').textContent = lcgLeadTimeRandoms.map(n => String(n).padStart(2, '0')).join(', ');
+    document.getElementById('lcgResults').classList.remove('hidden');
+    clearError();
+}
 
-    document.getElementById('autoDemandPreview').textContent = autoDemandRandoms.map(n => String(n).padStart(2, '0')).join(', ');
-    document.getElementById('autoLeadPreview').textContent = autoLeadRandoms.map(n => String(n).padStart(2, '0')).join(', ');
+function generateMidSquareRandoms() {
+    const seed = parseInt(document.getElementById('midSquareSeed').value);
+    const demandCount = parseInt(document.getElementById('midSquareDemandCount').value) || 0;
+    const leadTimeCount = parseInt(document.getElementById('midSquareLeadTimeCount').value) || 0;
+    
+    if (isNaN(seed) || seed < 1000 || seed > 9999) {
+        showError('Please enter a valid 4-digit seed (1000-9999).');
+        return;
+    }
+    
+    if (demandCount <= 0 || leadTimeCount <= 0) {
+        showError('Please enter positive counts for random numbers.');
+        return;
+    }
+    
+    const demandRandoms = generateMidSquare(seed, demandCount);
+    const leadTimeRandoms = generateMidSquare(seed + 1000, leadTimeCount);
+    
+    // Convert 0-1 to 1-100 range (same as Multi-server)
+    midSquareDemandRandoms = demandRandoms.map(n => Math.floor(n * 100) + 1);
+    midSquareLeadTimeRandoms = leadTimeRandoms.map(n => Math.floor(n * 100) + 1);
+    
+    document.getElementById('midSquareDemandPreview').textContent = midSquareDemandRandoms.map(n => String(n).padStart(2, '0')).join(', ');
+    document.getElementById('midSquareLeadTimePreview').textContent = midSquareLeadTimeRandoms.map(n => String(n).padStart(2, '0')).join(', ');
+    document.getElementById('midSquareResults').classList.remove('hidden');
+    clearError();
+}
+
+function useLCGNumbers() {
+    if (lcgDemandRandoms.length === 0 || lcgLeadTimeRandoms.length === 0) {
+        showError('Please generate numbers first.');
+        return;
+    }
+    
+    // Populate manual input fields
+    document.getElementById('numDemandRandoms').value = lcgDemandRandoms.length;
+    document.getElementById('numLeadTimeRandoms').value = lcgLeadTimeRandoms.length;
+    generateRandomInputs();
+    
+    // Fill in the values
+    lcgDemandRandoms.forEach((num, i) => {
+        const el = document.getElementById(`demandRand${i}`);
+        if (el) el.value = num;
+    });
+    
+    lcgLeadTimeRandoms.forEach((num, i) => {
+        const el = document.getElementById(`leadTimeRand${i}`);
+        if (el) el.value = num;
+    });
+    
+    // Switch to manual tab
+    switchRandomMethod('manual');
+    clearError();
+}
+
+function useMidSquareNumbers() {
+    if (midSquareDemandRandoms.length === 0 || midSquareLeadTimeRandoms.length === 0) {
+        showError('Please generate numbers first.');
+        return;
+    }
+    
+    // Populate manual input fields
+    document.getElementById('numDemandRandoms').value = midSquareDemandRandoms.length;
+    document.getElementById('numLeadTimeRandoms').value = midSquareLeadTimeRandoms.length;
+    generateRandomInputs();
+    
+    // Fill in the values
+    midSquareDemandRandoms.forEach((num, i) => {
+        const el = document.getElementById(`demandRand${i}`);
+        if (el) el.value = num;
+    });
+    
+    midSquareLeadTimeRandoms.forEach((num, i) => {
+        const el = document.getElementById(`leadTimeRand${i}`);
+        if (el) el.value = num;
+    });
+    
+    // Switch to manual tab
+    switchRandomMethod('manual');
     clearError();
 }
 
@@ -427,13 +558,22 @@ function runSimulation() {
 
     let demandRandoms = [];
     let leadTimeRandoms = [];
-    if (randomMethod === 'auto') {
-        if (autoDemandRandoms.length === 0 || autoLeadRandoms.length === 0) {
-            generateAutoRandoms();
+    if (randomMethod === 'LCG') {
+        if (lcgDemandRandoms.length === 0 || lcgLeadTimeRandoms.length === 0) {
+            showError('Please generate LCG random numbers first.');
+            return;
         }
-        demandRandoms = autoDemandRandoms;
-        leadTimeRandoms = autoLeadRandoms;
+        demandRandoms = lcgDemandRandoms;
+        leadTimeRandoms = lcgLeadTimeRandoms;
+    } else if (randomMethod === 'MidSquare') {
+        if (midSquareDemandRandoms.length === 0 || midSquareLeadTimeRandoms.length === 0) {
+            showError('Please generate MidSquare random numbers first.');
+            return;
+        }
+        demandRandoms = midSquareDemandRandoms;
+        leadTimeRandoms = midSquareLeadTimeRandoms;
     } else {
+        // Manual method
         const numDemandRandoms = parseInt(document.getElementById('numDemandRandoms').value);
         const numLeadTimeRandoms = parseInt(document.getElementById('numLeadTimeRandoms').value);
         if (!numDemandRandoms || !numLeadTimeRandoms) {
@@ -618,8 +758,16 @@ function resetInventory() {
     document.getElementById('performanceMeasurements').innerHTML = '';
     autoDemandRandoms = [];
     autoLeadRandoms = [];
-    document.getElementById('autoDemandPreview').textContent = '';
-    document.getElementById('autoLeadPreview').textContent = '';
+    lcgDemandRandoms = [];
+    lcgLeadTimeRandoms = [];
+    midSquareDemandRandoms = [];
+    midSquareLeadTimeRandoms = [];
+    document.getElementById('lcgDemandPreview').textContent = '';
+    document.getElementById('lcgLeadTimePreview').textContent = '';
+    document.getElementById('midSquareDemandPreview').textContent = '';
+    document.getElementById('midSquareLeadTimePreview').textContent = '';
+    document.getElementById('lcgResults').classList.add('hidden');
+    document.getElementById('midSquareResults').classList.add('hidden');
     clearError();
     goToStep(1);
 }
