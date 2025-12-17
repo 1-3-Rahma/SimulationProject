@@ -2,24 +2,64 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chi-Square Uniformity Test</title>
+    <!-- Global layout & buttons -->
     <link rel="stylesheet" href="../../css/main.css">
+    <!-- Simulation-specific layout (tables, inputs, etc.) -->
+    <link rel="stylesheet" href="../../css/simulation.css">
+    <!-- Multi-Server style (same as multiserver page) -->
+    <link rel="stylesheet" href="../../css/multiLimitedCustomer.css">
 </head>
 <body>
 
 <div class="container">
 
+    <button class="btn back-btn" onclick="window.location.href='../../index.html'">← Back to Main Menu</button>
+
     <h1>Uniformity Test (Chi-Square)</h1>
 
-    <button class="btn back-btn" onclick="window.location.href='../../index.html'">
-        Back to Main Menu
-    </button>
+    <!-- TABS -->
+    <div class="tabs-nav hidden" id="tabs">
+
+        <button class="tab-btn active" onclick="openTab(0)">Step 1</button>
+        <button class="tab-btn" onclick="openTab(1)">Step 2</button>
+        <button class="tab-btn" onclick="openTab(2)">Step 3</button>
+        <button class="tab-btn" onclick="openTab(3)">Step 4</button>
+        <button class="tab-btn" onclick="openTab(4)">Step 5</button>
+        <button class="tab-btn" onclick="openTab(5)">Decision</button>
+
+    </div>
+
+    <!-- Report section for PDF -->
+    <div id="report" style="display: none;">
+        <h1>Chi-Square Uniformity Test Results</h1>
+    </div>
+
+    <div class="tab-content" id="tab0">
+        <div class="tab-body"></div>
+    </div>
+    <div class="tab-content" id="tab1">
+        <div class="tab-body"></div>
+    </div>
+    <div class="tab-content" id="tab2">
+        <div class="tab-body"></div>
+    </div>
+    <div class="tab-content" id="tab3">
+        <div class="tab-body"></div>
+    </div>
+    <div class="tab-content" id="tab4">
+        <div class="tab-body"></div>
+    </div>
+    <div class="tab-content" id="tab5">
+        <div class="tab-body"></div>
+    </div>
     
     <!-- INPUTS -->
     <div class="input-group">
         <label>n (Total number of random numbers)</label>
         <input type="number" id="n" min="1">
-        <button class="btn" onclick="generateRandomInputs()">Generate Inputs</button>
+        <button class="btn btn-secondary" onclick="generateRandomInputs()">Generate Inputs</button>
     </div>
 
     <div id="randomInputs"></div>
@@ -34,35 +74,19 @@
         <input type="number" id="alpha" step="0.01">
     </div>
 
-    <button class="btn" onclick="runChiSquare()">Run Chi-Square Test</button>
-
-    <!-- TABS -->
-    <div class="tabs hidden" id="tabs">
-
-        <div class="tab-buttons">
-            <button class="tab-btn" onclick="openTab(0)">Step 1</button>
-            <button class="tab-btn" onclick="openTab(1)">Step 2</button>
-            <button class="tab-btn" onclick="openTab(2)">Step 3</button>
-            <button class="tab-btn" onclick="openTab(3)">Step 4</button>
-            <button class="tab-btn" onclick="openTab(4)">Step 5</button>
-            <button class="tab-btn" onclick="openTab(5)">Decision</button>
-
-        </div>
-
-        <div class="tab-content" id="tab0"></div>
-        <div class="tab-content hidden" id="tab1"></div>
-        <div class="tab-content hidden" id="tab2"></div>
-        <div class="tab-content hidden" id="tab3"></div>
-        <div class="tab-content" id="tab4"></div>
-        <div class="tab-content" id="tab5"></div>
-
-
+    <div class="button-group">
+        <button class="btn btn-primary" onclick="runChiSquare()">Run Chi-Square Test</button>
     </div>
+
+    
 
    
 
 </div>
 
-<script src="../../js/chiSquare.js"></script>
+    <!-- for download pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="../../js/chiSquare.js"></script>
 </body>
 </html>
