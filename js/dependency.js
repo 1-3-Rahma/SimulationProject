@@ -75,6 +75,9 @@ function generateInputs() {
 }
 
 let selectedCells = []; // Array to store selected cell coordinates {row, col}
+let isSelecting = false;
+let selectionStart = null;
+let previousSelectionOnMouseDown = [];
 
 function selectTableCell(row, col) {
     const cellId = `cell_${row}_${col}`;
@@ -96,6 +99,61 @@ function selectTableCell(row, col) {
     }
     
     updateSelectionCount();
+}
+
+function initiateCellSelection(row, col) {
+    isSelecting = true;
+    selectionStart = {row, col};
+    previousSelectionOnMouseDown = [...selectedCells];
+}
+
+function extendCellSelection(row, col) {
+    if (!isSelecting || !selectionStart) return;
+    
+    // Clear previous temp selections, restore to original state
+    selectedCells.forEach(cell => {
+        const cellElement = document.getElementById(`cell_${cell.row}_${cell.col}`);
+        if (cellElement) {
+            cellElement.classList.remove('selected-cell');
+        }
+    });
+    
+    // Restore original selection
+    selectedCells = [...previousSelectionOnMouseDown];
+    selectedCells.forEach(cell => {
+        const cellElement = document.getElementById(`cell_${cell.row}_${cell.col}`);
+        if (cellElement) {
+            cellElement.classList.add('selected-cell');
+        }
+    });
+    
+    // Calculate range from start to current
+    const minRow = Math.min(selectionStart.row, row);
+    const maxRow = Math.max(selectionStart.row, row);
+    const minCol = Math.min(selectionStart.col, col);
+    const maxCol = Math.max(selectionStart.col, col);
+    
+    // Select all cells in range
+    for (let r = minRow; r <= maxRow; r++) {
+        for (let c = minCol; c <= maxCol; c++) {
+            const cellId = `cell_${r}_${c}`;
+            const cellElement = document.getElementById(cellId);
+            if (cellElement) {
+                const alreadySelected = selectedCells.findIndex(cell => cell.row === r && cell.col === c) >= 0;
+                if (!alreadySelected) {
+                    selectedCells.push({row: r, col: c});
+                    cellElement.classList.add('selected-cell');
+                }
+            }
+        }
+    }
+    
+    updateSelectionCount();
+}
+
+function finalizeCellSelection() {
+    isSelecting = false;
+    selectionStart = null;
 }
 
 function clearTableSelection() {
@@ -434,8 +492,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 cell.id = `cell_${rowNum}_${colNum}`;
                 cell.textContent = RANDOM_NUMBER_TABLE[i][j].toFixed(6);
                 cell.style.cursor = 'pointer';
-                cell.title = `Click to select (Row ${rowNum}, Column ${colNum})`;
+                cell.style.userSelect = 'none';
+                cell.title = `Click to select or drag to select range (Row ${rowNum}, Column ${colNum})`;
                 cell.onclick = () => selectTableCell(rowNum, colNum);
+                cell.onmousedown = () => initiateCellSelection(rowNum, colNum);
+                cell.onmouseover = () => extendCellSelection(rowNum, colNum);
+                cell.onmouseup = () => finalizeCellSelection();
                 row.appendChild(cell);
             }
             tbody.appendChild(row);
@@ -458,6 +520,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Initialize button state
             updateSelectionCount();
         }
+        
+        // Add document-level mouse up to handle drag end outside table
+        document.addEventListener('mouseup', () => finalizeCellSelection());
     }
 });
 

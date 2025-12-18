@@ -75,6 +75,9 @@ function generateRandomInputs() {
 }
 
 let selectedCells = []; // Array to store selected cell coordinates {row, col}
+let isSelecting = false;
+let selectionStart = null;
+let previousSelectionOnMouseDown = [];
 
 function selectTableCell(row, col) {
     const cellId = `cell_${row}_${col}`;
@@ -96,6 +99,61 @@ function selectTableCell(row, col) {
     }
     
     updateSelectionCount();
+}
+
+function initiateCellSelection(row, col) {
+    isSelecting = true;
+    selectionStart = {row, col};
+    previousSelectionOnMouseDown = [...selectedCells];
+}
+
+function extendCellSelection(row, col) {
+    if (!isSelecting || !selectionStart) return;
+    
+    // Clear previous temp selections, restore to original state
+    selectedCells.forEach(cell => {
+        const cellElement = document.getElementById(`cell_${cell.row}_${cell.col}`);
+        if (cellElement) {
+            cellElement.classList.remove('selected-cell');
+        }
+    });
+    
+    // Restore original selection
+    selectedCells = [...previousSelectionOnMouseDown];
+    selectedCells.forEach(cell => {
+        const cellElement = document.getElementById(`cell_${cell.row}_${cell.col}`);
+        if (cellElement) {
+            cellElement.classList.add('selected-cell');
+        }
+    });
+    
+    // Calculate range from start to current
+    const minRow = Math.min(selectionStart.row, row);
+    const maxRow = Math.max(selectionStart.row, row);
+    const minCol = Math.min(selectionStart.col, col);
+    const maxCol = Math.max(selectionStart.col, col);
+    
+    // Select all cells in range
+    for (let r = minRow; r <= maxRow; r++) {
+        for (let c = minCol; c <= maxCol; c++) {
+            const cellId = `cell_${r}_${c}`;
+            const cellElement = document.getElementById(cellId);
+            if (cellElement) {
+                const alreadySelected = selectedCells.findIndex(cell => cell.row === r && cell.col === c) >= 0;
+                if (!alreadySelected) {
+                    selectedCells.push({row: r, col: c});
+                    cellElement.classList.add('selected-cell');
+                }
+            }
+        }
+    }
+    
+    updateSelectionCount();
+}
+
+function finalizeCellSelection() {
+    isSelecting = false;
+    selectionStart = null;
 }
 
 function clearTableSelection() {
@@ -575,8 +633,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 cell.id = `cell_${rowNum}_${colNum}`;
                 cell.textContent = RANDOM_NUMBER_TABLE[i][j].toFixed(6);
                 cell.style.cursor = 'pointer';
-                cell.title = `Click to select (Row ${rowNum}, Column ${colNum})`;
+                cell.style.userSelect = 'none';
+                cell.title = `Click to select or drag to select range (Row ${rowNum}, Column ${colNum})`;
                 cell.onclick = () => selectTableCell(rowNum, colNum);
+                cell.onmousedown = () => initiateCellSelection(rowNum, colNum);
+                cell.onmouseover = () => extendCellSelection(rowNum, colNum);
+                cell.onmouseup = () => finalizeCellSelection();
                 row.appendChild(cell);
             }
             tbody.appendChild(row);
@@ -599,6 +661,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Initialize button state
             updateSelectionCount();
         }
+        
+        // Add document-level mouse up to handle drag end outside table
+        document.addEventListener('mouseup', () => finalizeCellSelection());
     }
 });
 
@@ -648,7 +713,7 @@ function generateChiSquareTableHTML(df, alpha) {
     // Header row
     alphas.forEach(a => {
         const isHighlighted = a === alpha;
-        html += `<th style="background: ${isHighlighted ? '#FF6B6B' : '#8B4513'}; color: white; ${isHighlighted ? 'border: 3px solid #FF0000;' : ''}">χ²<sub>${a}</sub></th>`;
+        html += `<th style="background: ${isHighlighted ? '#A0522D' : '#8B4513'}; color: white; ${isHighlighted ? 'border: 3px solid #6B3410;' : ''}">χ²<sub>${a}</sub></th>`;
     });
     html += `</tr></thead><tbody>`;
     
@@ -656,7 +721,7 @@ function generateChiSquareTableHTML(df, alpha) {
     for (let v = 1; v <= 19; v++) {
         const isHighlightedRow = v === df;
         html += `<tr>`;
-        html += `<td style="background: ${isHighlightedRow ? '#FFE5E5' : '#F5E6D3'}; font-weight: bold; ${isHighlightedRow ? 'border: 2px solid #FF0000;' : ''}">${v}</td>`;
+        html += `<td style="background: ${isHighlightedRow ? '#E6D5C3' : '#F5E6D3'}; font-weight: bold; ${isHighlightedRow ? 'border: 2px solid #6B3410;' : ''}">${v}</td>`;
         
         alphas.forEach(a => {
             const value = CHI_SQUARE_FULL_TABLE[a][v - 1];
@@ -665,11 +730,11 @@ function generateChiSquareTableHTML(df, alpha) {
             
             let cellStyle = '';
             if (isIntersection) {
-                cellStyle = 'background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%); color: white; font-weight: bold; border: 3px solid #FF0000; font-size: 16px;';
+                cellStyle = 'background: linear-gradient(135deg, #A0522D 0%, #CD853F 100%); color: white; font-weight: bold; border: 3px solid #6B3410; font-size: 16px;';
             } else if (isHighlightedRow) {
-                cellStyle = 'background: #FFE5E5; border: 2px solid #FF0000;';
+                cellStyle = 'background: #E6D5C3; border: 2px solid #6B3410;';
             } else if (isHighlightedCol) {
-                cellStyle = 'background: #FFE5E5; border: 2px solid #FF0000;';
+                cellStyle = 'background: #E6D5C3; border: 2px solid #6B3410;';
             }
             
             html += `<td style="${cellStyle}">${value.toFixed(2)}</td>`;
