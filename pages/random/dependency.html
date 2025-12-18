@@ -57,7 +57,55 @@
     <div class="input-group">
         <label>n (Number of random numbers)</label>
         <input type="number" id="n" min="2">
-        <button class="btn btn-secondary" onclick="generateInputs()">Generate Inputs</button>
+    </div>
+
+    <!-- Method Selector -->
+    <div class="random-method-selector">
+        <div class="method-tabs">
+            <button class="method-tab active" onclick="switchInputMethod('manual')" id="tabManual">Manual Input</button>
+            <button class="method-tab" onclick="switchInputMethod('table')" id="tabTable">Select from Table</button>
+        </div>
+        
+        <!-- Manual Input Section -->
+        <div id="manualSection" class="method-section active">
+            <div class="button-group" style="margin: 15px 0;">
+                <button class="btn btn-secondary" onclick="generateInputs()">Generate Input Fields</button>
+            </div>
+        </div>
+        
+        <!-- Table Selection Section -->
+        <div id="tableSection" class="method-section">
+            <p style="margin: 15px 0; color: #6B4423; font-weight: bold;">
+                Click on cells in the table below to select random numbers. Selected cells will be highlighted.
+            </p>
+            <div class="button-group" style="margin: 15px 0;">
+                <button class="btn btn-secondary" onclick="clearTableSelection()">Clear Selection</button>
+                <button class="btn btn-primary" onclick="applyTableSelection()">Apply Selected Numbers</button>
+            </div>
+            <div class="table-container" style="margin-top: 20px;">
+                <h3>Table of Random Numbers (0-1)</h3>
+                <div class="scrollable" style="max-height: 400px;">
+                    <table class="editable-table" id="randomNumberTable">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>1</th>
+                                <th>2</th>
+                                <th>3</th>
+                                <th>4</th>
+                                <th>5</th>
+                                <th>6</th>
+                                <th>7</th>
+                                <th>8</th>
+                                <th>9</th>
+                                <th>10</th>
+                            </tr>
+                        </thead>
+                        <tbody id="randomTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="randomInputs"></div>

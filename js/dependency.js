@@ -1,3 +1,39 @@
+// Random Number Table (19 rows x 10 columns)
+const RANDOM_NUMBER_TABLE = [
+    [0.182207, 0.433596, 0.997747, 0.290859, 0.181924, 0.277099, 0.123456, 0.789012, 0.345678, 0.901234],
+    [0.567890, 0.234567, 0.890123, 0.456789, 0.012345, 0.678901, 0.345678, 0.901234, 0.567890, 0.123456],
+    [0.789012, 0.234567, 0.567890, 0.901234, 0.345678, 0.123456, 0.789012, 0.456789, 0.012345, 0.678901],
+    [0.234567, 0.890123, 0.456789, 0.012345, 0.678901, 0.345678, 0.901234, 0.567890, 0.123456, 0.789012],
+    [0.456789, 0.012345, 0.678901, 0.345678, 0.901234, 0.567890, 0.123456, 0.789012, 0.234567, 0.890123],
+    [0.678901, 0.345678, 0.901234, 0.567890, 0.123456, 0.789012, 0.234567, 0.890123, 0.456789, 0.012345],
+    [0.901234, 0.567890, 0.123456, 0.789012, 0.234567, 0.890123, 0.456789, 0.012345, 0.678901, 0.345678],
+    [0.123456, 0.789012, 0.234567, 0.890123, 0.456789, 0.012345, 0.678901, 0.345678, 0.901234, 0.567890],
+    [0.345678, 0.901234, 0.567890, 0.123456, 0.789012, 0.234567, 0.890123, 0.456789, 0.012345, 0.678901],
+    [0.567890, 0.123456, 0.789012, 0.234567, 0.890123, 0.456789, 0.012345, 0.678901, 0.345678, 0.901234],
+    [0.789012, 0.234567, 0.890123, 0.456789, 0.012345, 0.678901, 0.345678, 0.901234, 0.567890, 0.123456],
+    [0.234567, 0.890123, 0.456789, 0.012345, 0.678901, 0.345678, 0.901234, 0.567890, 0.123456, 0.789012],
+    [0.456789, 0.012345, 0.678901, 0.345678, 0.901234, 0.567890, 0.123456, 0.789012, 0.234567, 0.890123],
+    [0.678901, 0.345678, 0.901234, 0.567890, 0.123456, 0.789012, 0.234567, 0.890123, 0.456789, 0.012345],
+    [0.901234, 0.567890, 0.123456, 0.789012, 0.234567, 0.890123, 0.456789, 0.012345, 0.678901, 0.345678],
+    [0.123456, 0.789012, 0.234567, 0.890123, 0.456789, 0.012345, 0.678901, 0.345678, 0.901234, 0.567890],
+    [0.345678, 0.901234, 0.567890, 0.123456, 0.789012, 0.234567, 0.890123, 0.456789, 0.012345, 0.678901],
+    [0.567890, 0.123456, 0.789012, 0.234567, 0.890123, 0.456789, 0.012345, 0.678901, 0.345678, 0.901234],
+    [0.789012, 0.234567, 0.890123, 0.456789, 0.012345, 0.678901, 0.345678, 0.901234, 0.567890, 0.123456]
+];
+
+function switchInputMethod(method) {
+    document.querySelectorAll('.method-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.method-section').forEach(section => section.classList.remove('active'));
+    
+    if (method === 'manual') {
+        document.getElementById('tabManual').classList.add('active');
+        document.getElementById('manualSection').classList.add('active');
+    } else {
+        document.getElementById('tabTable').classList.add('active');
+        document.getElementById('tableSection').classList.add('active');
+    }
+}
+
 function generateInputs() {
     const n = parseInt(document.getElementById("n").value);
     
@@ -29,11 +65,103 @@ function generateInputs() {
             input.max = "1";
             input.placeholder = `X${i+1}`;
             input.className = "table-input";
+            input.id = `randomInput_${i}`;
             inputsContainer.appendChild(input);
         }
         
         inputGroup.appendChild(inputsContainer);
         container.appendChild(inputGroup);
+    }
+}
+
+let selectedCells = []; // Array to store selected cell coordinates {row, col}
+
+function selectTableCell(row, col) {
+    const cellId = `cell_${row}_${col}`;
+    const cell = document.getElementById(cellId);
+    
+    if (!cell) return;
+    
+    // Check if already selected
+    const index = selectedCells.findIndex(c => c.row === row && c.col === col);
+    
+    if (index >= 0) {
+        // Deselect
+        selectedCells.splice(index, 1);
+        cell.classList.remove('selected-cell');
+    } else {
+        // Select
+        selectedCells.push({row, col});
+        cell.classList.add('selected-cell');
+    }
+    
+    updateSelectionCount();
+}
+
+function clearTableSelection() {
+    selectedCells.forEach(cell => {
+        const cellElement = document.getElementById(`cell_${cell.row}_${cell.col}`);
+        if (cellElement) {
+            cellElement.classList.remove('selected-cell');
+        }
+    });
+    selectedCells = [];
+    updateSelectionCount();
+}
+
+function updateSelectionCount() {
+    const countElement = document.getElementById('selectionCount');
+    if (countElement) {
+        countElement.textContent = `Selected: ${selectedCells.length} cells`;
+    }
+    
+    // Enable/disable Apply button based on selection
+    const applyButton = document.querySelector('button[onclick*="applyTableSelection"]');
+    if (applyButton) {
+        if (selectedCells.length === 0) {
+            applyButton.disabled = true;
+            applyButton.style.opacity = '0.5';
+            applyButton.style.cursor = 'not-allowed';
+        } else {
+            applyButton.disabled = false;
+            applyButton.style.opacity = '1';
+            applyButton.style.cursor = 'pointer';
+        }
+    }
+}
+
+function applyTableSelection() {
+    // Check if no cells are selected first
+    if (selectedCells.length === 0) {
+        alert("No cells selected! Please click on cells in the table to select them first.");
+        return;
+    }
+    
+    const n = parseInt(document.getElementById("n").value);
+    
+    if (!n || n <= 0) {
+        alert("n (Number of random numbers) must be greater than 0.");
+        return;
+    }
+    
+    // Generate inputs first
+    generateInputs();
+    
+    // Fill inputs with selected values
+    const count = Math.min(n, selectedCells.length);
+    for (let i = 0; i < count; i++) {
+        const cell = selectedCells[i];
+        const value = RANDOM_NUMBER_TABLE[cell.row - 1][cell.col - 1]; // Convert to 0-based (rows start from 1)
+        const input = document.getElementById(`randomInput_${i}`);
+        if (input) {
+            input.value = value.toFixed(6);
+        }
+    }
+    
+    if (selectedCells.length < n) {
+        alert(`Only ${selectedCells.length} cells were selected. Please select more cells or reduce n.`);
+    } else if (selectedCells.length > n) {
+        alert(`Only the first ${n} selected cells were used.`);
     }
 }
 
@@ -181,6 +309,7 @@ function runDependencyTest() {
         el.style.display = 'none';
     });
     document.getElementById("randomInputs").style.display = 'none';
+    document.querySelector('.random-method-selector').style.display = 'none';
     
     // Show tabs
     document.getElementById("tabs").classList.remove("hidden");
@@ -269,6 +398,7 @@ function startOver() {
         el.style.display = '';
     });
     document.getElementById("randomInputs").style.display = '';
+    document.querySelector('.random-method-selector').style.display = '';
     
     // Show Run Test button
     const runButtonGroup = document.querySelector('.button-group');
@@ -279,12 +409,57 @@ function startOver() {
     // Reset form inputs
     document.getElementById("n").value = '';
     document.getElementById("maxK").value = '';
+    clearTableSelection();
     document.getElementById("randomInputs").innerHTML = '';
+    
+    // Reset to manual method
+    switchInputMethod('manual');
     
     // Reset tab to first
     currentTab = 0;
     openTab(0);
 }
+
+// Initialize random number table on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const tbody = document.getElementById('randomTableBody');
+    if (tbody) {
+        for (let i = 0; i < RANDOM_NUMBER_TABLE.length; i++) {
+            const row = document.createElement('tr');
+            const rowNum = i + 1;
+            row.innerHTML = `<td><strong>${rowNum}</strong></td>`;
+            for (let j = 0; j < RANDOM_NUMBER_TABLE[i].length; j++) {
+                const cell = document.createElement('td');
+                const colNum = j + 1;
+                cell.id = `cell_${rowNum}_${colNum}`;
+                cell.textContent = RANDOM_NUMBER_TABLE[i][j].toFixed(6);
+                cell.style.cursor = 'pointer';
+                cell.title = `Click to select (Row ${rowNum}, Column ${colNum})`;
+                cell.onclick = () => selectTableCell(rowNum, colNum);
+                row.appendChild(cell);
+            }
+            tbody.appendChild(row);
+        }
+        
+        // Add selection count display
+        const tableSection = document.getElementById('tableSection');
+        if (tableSection) {
+            const countDiv = document.createElement('div');
+            countDiv.id = 'selectionCount';
+            countDiv.style.margin = '10px 0';
+            countDiv.style.fontWeight = 'bold';
+            countDiv.style.color = '#5C4033';
+            countDiv.textContent = 'Selected: 0 cells';
+            const buttonGroup = tableSection.querySelector('.button-group');
+            if (buttonGroup) {
+                buttonGroup.parentNode.insertBefore(countDiv, buttonGroup);
+            }
+            
+            // Initialize button state
+            updateSelectionCount();
+        }
+    }
+});
 
 function openTab(index) {
     // Update tab buttons
