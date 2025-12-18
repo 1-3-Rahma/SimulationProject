@@ -156,6 +156,11 @@ function finalizeCellSelection() {
     selectionStart = null;
 }
 
+function approximateValue(value) {
+    // Round to 2 decimal places (third decimal: >= 5 rounds up, < 5 rounds down)
+    return parseFloat(value.toFixed(2));
+}
+
 function clearTableSelection() {
     selectedCells.forEach(cell => {
         const cellElement = document.getElementById(`cell_${cell.row}_${cell.col}`);
@@ -210,9 +215,10 @@ function applyTableSelection() {
     for (let i = 0; i < count; i++) {
         const cell = selectedCells[i];
         const value = RANDOM_NUMBER_TABLE[cell.row - 1][cell.col - 1]; // Convert to 0-based (rows start from 1)
+        const approximatedValue = approximateValue(value);
         const input = document.getElementById(`randomInput_${i}`);
         if (input) {
-            input.value = value.toFixed(6);
+            input.value = approximatedValue;
         }
     }
     
