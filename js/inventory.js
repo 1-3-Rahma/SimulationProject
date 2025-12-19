@@ -280,20 +280,192 @@ function generateRandomInputs() {
     }
 }
 
-function switchRandomMethod(method) {
-    randomMethod = method;
-    document.querySelectorAll('.method-tab').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.method-section').forEach(sec => sec.classList.remove('active'));
-    if (method === 'manual') {
-        document.getElementById('tabManual').classList.add('active');
-        document.getElementById('manualRandomSection').classList.add('active');
-    } else if (method === 'LCG') {
-        document.getElementById('tabLCG').classList.add('active');
-        document.getElementById('lcgRandomSection').classList.add('active');
-    } else if (method === 'MidSquare') {
-        document.getElementById('tabMidSquare').classList.add('active');
-        document.getElementById('midSquareRandomSection').classList.add('active');
+function switchTableMethod(tableType, method) {
+    // Remove active class from all tabs for this table
+    document.querySelectorAll(`#${tableType}-tab-manual, #${tableType}-tab-lcg, #${tableType}-tab-midsquare`).forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // Remove active class from all sections for this table
+    document.querySelectorAll(`#${tableType}-manual-section, #${tableType}-lcg-section, #${tableType}-midsquare-section`).forEach(section => {
+        section.classList.remove('active');
+    });
+
+    // Add active class to selected tab and section
+    document.getElementById(`${tableType}-tab-${method}`).classList.add('active');
+    document.getElementById(`${tableType}-${method}-section`).classList.add('active');
+}
+
+function generateTableRandomNumbers(tableType, method) {
+    try {
+        const countInputId = `${tableType}-${method}-count`;
+        const count = parseInt(document.getElementById(countInputId).value);
+
+        if (isNaN(count) || count <= 0) {
+            alert(`Please enter a valid number of random numbers for ${tableType}.`);
+            return;
+        }
+
+        let numbers = [];
+
+        if (method === 'lcg') {
+            const a = parseFloat(document.getElementById(`${tableType}-lcg-a`).value);
+            const c = parseFloat(document.getElementById(`${tableType}-lcg-c`).value);
+            const m = parseFloat(document.getElementById(`${tableType}-lcg-m`).value);
+            const seed = parseFloat(document.getElementById(`${tableType}-lcg-seed`).value);
+
+            if (isNaN(a) || isNaN(c) || isNaN(m) || isNaN(seed)) {
+                alert('Please enter all LCG parameters.');
+                return;
+            }
+
+            numbers = generateLCG(a, c, m, seed, count);
+
+        } else if (method === 'midsquare') {
+            const seed = parseInt(document.getElementById(`${tableType}-midsquare-seed`).value);
+
+            if (isNaN(seed) || seed < 1000 || seed > 9999) {
+                alert('Please enter a valid 4-digit seed (1000-9999).');
+                return;
+            }
+
+            numbers = generateMidSquare(seed, count);
+        }
+
+        // Populate the table with generated numbers
+        const tbodyId = tableType === 'demand' ? 'tbodyRnDemand' : 'tbodyRnLeadTime';
+        const tbody = document.getElementById(tbodyId);
+        tbody.innerHTML = '';
+
+        numbers.forEach(num => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, '${tableType}')" title="Delete row">🗑️</button></td>
+                <td><input type="number" class="table-input" min="0" max="100" step="0.01" value="${num}" placeholder="0-100" onchange="updateRandomNumberCounts()"></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Update counts and switch to manual view
+        updateRandomNumberCounts();
+        switchTableMethod(tableType, 'manual');
+
+        alert(`${tableType.charAt(0).toUpperCase() + tableType.slice(1)} numbers generated successfully and applied to the table.`);
+
+    } catch (error) {
+        alert('Error generating random numbers: ' + error.message);
     }
+}
+
+// Table management functions
+function addRandomNumberRow(tableType) {
+    const tbodyId = tableType === 'demand' ? 'tbodyRnDemand' : 'tbodyRnLeadTime';
+    const tbody = document.getElementById(tbodyId);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, '${tableType}')" title="Delete row">🗑️</button></td>
+        <td><input type="number" class="table-input" min="0" max="100" step="0.01" value="" placeholder="0-100" onchange="updateRandomNumberCounts()"></td>
+    `;
+    tbody.appendChild(tr);
+    tr.querySelector('td:nth-child(2) input').focus();
+    updateRandomNumberCounts();
+}
+
+function deleteRandomNumberRow(btn, tableType) {
+    const tbodyId = tableType === 'demand' ? 'tbodyRnDemand' : 'tbodyRnLeadTime';
+    const tbody = document.getElementById(tbodyId);
+    if (tbody.querySelectorAll('tr').length <= 1) {
+        alert('At least one row is required.');
+        return;
+    }
+    btn.closest('tr').remove();
+    updateRandomNumberCounts();
+}
+
+function generateRandomNumberRows(tableType) {
+    const inputId = tableType === 'demand' ? 'demandManualRowCount' : 'leadtimeManualRowCount';
+    const tbodyId = tableType === 'demand' ? 'tbodyRnDemand' : 'tbodyRnLeadTime';
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    const count = parseInt(input.value) || (tableType === 'demand' ? 15 : 5);
+    if (count < 1 || count > 100) {
+        alert('Please enter a number between 1 and 100.');
+        return;
+    }
+
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+
+    tbody.innerHTML = ''; // Clear existing rows
+
+    for (let i = 0; i < count; i++) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, '${tableType}')" title="Delete row">🗑️</button></td>
+            <td><input type="number" class="table-input" min="0" max="100" step="0.01" value="" placeholder="0-100" onchange="updateRandomNumberCounts()"></td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    // Focus on first input of the first row
+    const firstRow = tbody.firstElementChild;
+    if (firstRow) {
+        firstRow.querySelector('td:nth-child(2) input').focus();
+    }
+
+    updateRandomNumberCounts();
+}
+
+function updateRandomNumberCounts() {
+    const demandNumbers = readRandomNumbersFromTable('demand', true);
+    const leadTimeNumbers = readRandomNumbersFromTable('leadtime', true);
+
+    const demandCountEl = document.getElementById('demandCount');
+    const leadTimeCountEl = document.getElementById('leadtimeCount');
+
+    if (demandCountEl) demandCountEl.textContent = `Count: ${demandNumbers.length} numbers`;
+    if (leadTimeCountEl) leadTimeCountEl.textContent = `Count: ${leadTimeNumbers.length} numbers`;
+
+    // Update hidden textareas for backward compatibility
+    const txtRnDemand = document.getElementById('txtRnDemand');
+    const txtRnLeadTime = document.getElementById('txtRnLeadTime');
+    if (txtRnDemand) txtRnDemand.value = demandNumbers.join(', ');
+    if (txtRnLeadTime) txtRnLeadTime.value = leadTimeNumbers.join(', ');
+}
+
+function readRandomNumbersFromTable(tableType, forDisplay = false) {
+    const tbodyId = tableType === 'demand' ? 'tbodyRnDemand' : 'tbodyRnLeadTime';
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return [];
+
+    const rows = tbody.querySelectorAll('tr');
+    const numbers = [];
+
+    for (const row of rows) {
+        const input = row.querySelector('td:nth-child(2) input');
+        if (!input) continue;
+
+        const rawValue = parseFloat(input.value);
+        if (isNaN(rawValue)) continue;
+
+        // Restrict to 0-100 range
+        if (rawValue < 0 || rawValue > 100) continue;
+
+        // Process the value (round to nearest integer)
+        let processedValue = Math.round(rawValue);
+
+        if (forDisplay) {
+            // For display purposes, return the processed value
+            numbers.push(processedValue);
+        } else {
+            // For calculation purposes, treat 0 as 100, others as processed
+            const normalizedValue = (processedValue === 0) ? 100 : processedValue;
+            numbers.push(normalizedValue);
+        }
+    }
+
+    return numbers;
 }
 
 function generateLCGDetailed(a, c, m, initialZ, count) {
@@ -647,36 +819,22 @@ function runSimulation() {
 
     const ordersFromDOM = readPendingOrdersFromDOM();
 
-    let demandRandoms = [];
-    let leadTimeRandoms = [];
-    if (randomMethod === 'LCG') {
-        if (lcgDemandRandoms.length === 0 || lcgLeadTimeRandoms.length === 0) {
-            showError('Please generate LCG random numbers first.');
-            return;
-        }
-        demandRandoms = lcgDemandRandoms;
-        leadTimeRandoms = lcgLeadTimeRandoms;
-    } else if (randomMethod === 'MidSquare') {
-        if (midSquareDemandRandoms.length === 0 || midSquareLeadTimeRandoms.length === 0) {
-            showError('Please generate MidSquare random numbers first.');
-            return;
-        }
-        demandRandoms = midSquareDemandRandoms;
-        leadTimeRandoms = midSquareLeadTimeRandoms;
-    } else {
-        // Manual method
-        const numDemandRandoms = parseInt(document.getElementById('numDemandRandoms').value);
-        const numLeadTimeRandoms = parseInt(document.getElementById('numLeadTimeRandoms').value);
-        if (!numDemandRandoms || !numLeadTimeRandoms) {
-            showError('Please enter counts for random numbers before running the simulation.');
-            return;
-        }
-        const demandVals = collectManualRandoms(numDemandRandoms, 'demandRand');
-        if (!demandVals) return;
-        const leadVals = collectManualRandoms(numLeadTimeRandoms, 'leadTimeRand');
-        if (!leadVals) return;
-        demandRandoms = demandVals;
-        leadTimeRandoms = leadVals;
+    // Read random numbers from tables (supports different methods per table)
+    const demandRandoms = readRandomNumbersFromTable('demand'); // For calculations (0 becomes 100)
+    const leadTimeRandoms = readRandomNumbersFromTable('leadtime'); // For calculations (0 becomes 100)
+
+    // Validate that we have enough random numbers
+    const totalDemandNeeded = cycles * N; // One demand per day per cycle
+    const totalLeadTimeNeeded = Math.max(1, Math.floor(cycles * N * 0.1)); // Estimate based on order frequency
+
+    if (demandRandoms.length < totalDemandNeeded) {
+        showError(`Need at least ${totalDemandNeeded} demand random numbers. Currently have ${demandRandoms.length}.`);
+        return;
+    }
+
+    if (leadTimeRandoms.length < totalLeadTimeNeeded) {
+        showError(`Need at least ${totalLeadTimeNeeded} lead time random numbers. Currently have ${leadTimeRandoms.length}.`);
+        return;
     }
 
     const tbody = document.getElementById('simulationTableBody');
@@ -865,4 +1023,5 @@ function resetInventory() {
 
 document.addEventListener('DOMContentLoaded', function() {
     init();
+    updateRandomNumberCounts();
 });

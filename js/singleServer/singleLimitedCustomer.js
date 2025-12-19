@@ -433,21 +433,8 @@ function readRandomNumbersFromTable(type, forDisplay = false) {
         // Restrict to 0-100 range
         if (rawValue < 0 || rawValue > 100) continue;
 
-        // Process the value (round decimals)
-        let processedValue = rawValue;
-
-        // Handle decimal rounding (but don't round 0)
-        if (rawValue !== 0 && rawValue % 1 !== 0) { // Has decimal part and is not 0
-            const decimalPart = Math.round((rawValue % 1) * 100) / 100; // Round to 2 decimal places to avoid floating point issues
-            if (decimalPart >= 0.5 && decimalPart <= 0.9) {
-                // Round up to next greatest integer
-                processedValue = Math.ceil(rawValue);
-            } else if (decimalPart >= 0.1 && decimalPart <= 0.4) {
-                // Round down (floor)
-                processedValue = Math.floor(rawValue);
-            }
-            // Note: decimals 0.0-0.09 and 0.91-0.99 are not explicitly handled, so they remain as parsed
-        }
+        // Process the value (round to nearest integer)
+        let processedValue = Math.round(rawValue);
 
         if (forDisplay) {
             // For display purposes, return the processed value (rounded, but 0 stays as 0)

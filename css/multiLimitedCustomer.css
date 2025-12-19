@@ -721,6 +721,19 @@ textarea {
     border-bottom: 2px solid #8B4513;
 }
 
+/* Per-table method selection styling */
+.method-selection .method-tabs {
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.method-selection .method-tab {
+    padding: 8px 16px;
+    font-size: 14px;
+    border: 2px solid #D2B48C;
+    border-bottom: none;
+}
+
 .method-section {
     display: none;
     padding: 20px;
