@@ -173,195 +173,175 @@
         <div id="tab3" class="tab-content">
             <div class="tab-body">
                 <h2>Step 4: Random Numbers</h2>
-                <p>Choose how to provide random numbers for each table: Manual Input, LCG method, or Mid-Square method</p>
-
-                <div class="random-tables-container">
-                    <!-- Arrival Random Numbers Table -->
-                    <div class="random-table-box">
-                        <h4>Arrival Random Numbers (for customers 2..N)</h4>
-
-                        <!-- Method Selection for Arrival -->
-                        <div class="method-selection">
-                            <div class="method-tabs">
-                                <button class="method-tab active" onclick="switchTableMethod('arrival', 'manual')" id="arrival-tab-manual">Manual Input</button>
-                                <button class="method-tab" onclick="switchTableMethod('arrival', 'lcg')" id="arrival-tab-lcg">LCG Method</button>
-                                <button class="method-tab" onclick="switchTableMethod('arrival', 'midsquare')" id="arrival-tab-midsquare">Mid-Square Method</button>
-                            </div>
-                        </div>
-
-                        <!-- Manual Input for Arrival -->
-                        <div id="arrival-manual-section" class="method-section active">
-                            <div class="table-controls">
-                                <button class="btn-add-row" onclick="addRandomNumberRow('arrival')">Add Row</button>
-                                <input type="number" id="randomArrivalRowCount" min="1" max="100" value="5" placeholder="Rows" style="width: 80px; margin: 0 5px; padding: 5px;">
-                                <button class="btn btn-secondary" onclick="generateRandomNumberRows('arrival')">Generate Rows</button>
-                                <button class="btn btn-secondary" onclick="updateRandomNumberCounts()">Update Count</button>
-                            </div>
-                            <div class="table-container">
-                                <table id="tableRnArr" class="editable-table random-numbers-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 50px;"></th>
-                                            <th>Random Number</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyRnArr">
-                                        <tr>
-                                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'arrival')" title="Delete row">🗑️</button></td>
-                                            <td><input type="number" class="table-input" min="0" max="100" step="0.01" placeholder="0-100"></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'arrival')" title="Delete row">🗑️</button></td>
-                                            <td><input type="number" class="table-input" min="0" max="100" step="0.01" placeholder="0-100"></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'arrival')" title="Delete row">🗑️</button></td>
-                                            <td><input type="number" class="table-input" min="0" max="100" step="0.01" placeholder="0-100"></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <small id="arrivalCount">Count: 3 numbers</small>
-                        </div>
-
-                        <!-- LCG Parameters for Arrival -->
-                        <div id="arrival-lcg-section" class="method-section">
-                            <h5>LCG Parameters for Arrival Numbers</h5>
-                            <div class="params-grid">
-                                <div class="input-group">
-                                    <label>Multiplier (a):</label>
-                                    <input type="number" id="arrival-lcg-a" min="0" placeholder="e.g., 1664525">
-                                </div>
-                                <div class="input-group">
-                                    <label>Increment (c):</label>
-                                    <input type="number" id="arrival-lcg-c" min="0" placeholder="e.g., 1013904223">
-                                </div>
-                                <div class="input-group">
-                                    <label>Modulus (m):</label>
-                                    <input type="number" id="arrival-lcg-m" min="1" placeholder="e.g., 2^32">
-                                </div>
-                                <div class="input-group">
-                                    <label>Initial Seed (Z₀):</label>
-                                    <input type="number" id="arrival-lcg-seed" min="0" placeholder="e.g., 12345">
-                                </div>
-                            </div>
-                            <div class="input-group">
-                                <label>Number of Random Numbers:</label>
-                                <input type="number" id="arrival-lcg-count" min="1" placeholder="e.g., 50">
-                            </div>
-                            <button class="btn btn-secondary" onclick="generateTableRandomNumbers('arrival', 'lcg')">Generate Arrival Numbers</button>
-                        </div>
-
-                        <!-- Mid-Square Parameters for Arrival -->
-                        <div id="arrival-midsquare-section" class="method-section">
-                            <h5>Mid-Square Parameters for Arrival Numbers</h5>
-                            <div class="input-group">
-                                <label>Seed (4-digit, 1000-9999):</label>
-                                <input type="number" id="arrival-midsquare-seed" min="1000" max="9999" placeholder="e.g., 1234">
-                            </div>
-                            <div class="input-group">
-                                <label>Number of Random Numbers:</label>
-                                <input type="number" id="arrival-midsquare-count" min="1" placeholder="e.g., 50">
-                            </div>
-                            <button class="btn btn-secondary" onclick="generateTableRandomNumbers('arrival', 'midsquare')">Generate Arrival Numbers</button>
-                        </div>
+                <p>Choose how to provide random numbers: Manual Input or Generated (LCG/Mid-Square)</p>
+                
+                <!-- Random Number Method Selection -->
+                <div class="random-method-selector">
+                    <div class="method-tabs">
+                        <button class="method-tab active" onclick="switchRandomMethod('manual')" id="tabManual">Manual Input</button>
+                        <button class="method-tab" onclick="switchRandomMethod('generated')" id="tabGenerated">Generated</button>
                     </div>
-
-                    <!-- Service Random Numbers Table -->
-                    <div class="random-table-box">
-                        <h4>Service Random Numbers (for all customers)</h4>
-
-                        <!-- Method Selection for Service -->
-                        <div class="method-selection">
-                            <div class="method-tabs">
-                                <button class="method-tab active" onclick="switchTableMethod('service', 'manual')" id="service-tab-manual">Manual Input</button>
-                                <button class="method-tab" onclick="switchTableMethod('service', 'lcg')" id="service-tab-lcg">LCG Method</button>
-                                <button class="method-tab" onclick="switchTableMethod('service', 'midsquare')" id="service-tab-midsquare">Mid-Square Method</button>
+                    
+                    <!-- Manual Input Section -->
+                    <div id="manualSection" class="method-section active">
+                        <h3>Manual Random Number Input</h3>
+                        <p>Enter random numbers between 1 and 100 directly in the table cells</p>
+                        
+                        <div class="random-tables-container">
+                            <div class="random-table-box">
+                                <h4>Arrival Random Numbers (for customers 2..N)</h4>
+                                <div class="table-controls">
+                                    <button class="btn-add-row" onclick="addRandomNumberRow('arrival')"> Add Row</button>
+                                    <input type="number" id="randomArrivalRowCount" min="1" max="100" value="5" placeholder="Rows" style="width: 80px; margin: 0 5px; padding: 5px;">
+                                    <button class="btn btn-secondary" onclick="generateRandomNumberRows('arrival')">Generate Rows</button>
+                                    <button class="btn btn-secondary" onclick="updateRandomNumberCounts()">Update Count</button>
+                                </div>
+                                <div class="table-container">
+                                    <table id="tableRnArr" class="editable-table random-numbers-table">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 50px;"></th>
+                                                <th>Random Number</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tbodyRnArr">
+                                            <tr>
+                                                <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'arrival')" title="Delete row">🗑️</button></td>
+                                                <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'arrival')" title="Delete row">🗑️</button></td>
+                                                <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'arrival')" title="Delete row">🗑️</button></td>
+                                                <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <small id="arrivalCount">Count: 3 numbers</small>
+                            </div>
+                            
+                            <div class="random-table-box">
+                                <h4>Service Random Numbers (for all customers)</h4>
+                                <div class="table-controls">
+                                    <button class="btn-add-row" onclick="addRandomNumberRow('service')">Add Row</button>
+                                    <input type="number" id="randomServiceRowCount" min="1" max="100" value="5" placeholder="Rows" style="width: 80px; margin: 0 5px; padding: 5px;">
+                                    <button class="btn btn-secondary" onclick="generateRandomNumberRows('service')">Generate Rows</button>
+                                    <button class="btn btn-secondary" onclick="updateRandomNumberCounts()">Update Count</button>
+                                </div>
+                                <div class="table-container">
+                                    <table id="tableRnServ" class="editable-table random-numbers-table">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 50px;"></th>
+                                                <th>Random Number</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tbodyRnServ">
+                                            <tr>
+                                                <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'service')" title="Delete row">🗑️</button></td>
+                                                <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'service')" title="Delete row">🗑️</button></td>
+                                                <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'service')" title="Delete row">🗑️</button></td>
+                                                <td><input type="number" class="table-input" min="1" max="100" placeholder="1-100"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <small id="serviceCount">Count: 3 numbers</small>
                             </div>
                         </div>
-
-                        <!-- Manual Input for Service -->
-                        <div id="service-manual-section" class="method-section active">
-                            <div class="table-controls">
-                                <button class="btn-add-row" onclick="addRandomNumberRow('service')">Add Row</button>
-                                <input type="number" id="randomServiceRowCount" min="1" max="100" value="5" placeholder="Rows" style="width: 80px; margin: 0 5px; padding: 5px;">
-                                <button class="btn btn-secondary" onclick="generateRandomNumberRows('service')">Generate Rows</button>
-                                <button class="btn btn-secondary" onclick="updateRandomNumberCounts()">Update Count</button>
-                            </div>
-                            <div class="table-container">
-                                <table id="tableRnServ" class="editable-table random-numbers-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 50px;"></th>
-                                            <th>Random Number</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyRnServ">
-                                        <tr>
-                                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'service')" title="Delete row">🗑️</button></td>
-                                            <td><input type="number" class="table-input" min="0" max="100" step="0.01" placeholder="0-100"></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'service')" title="Delete row">🗑️</button></td>
-                                            <td><input type="number" class="table-input" min="0" max="100" step="0.01" placeholder="0-100"></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'service')" title="Delete row">🗑️</button></td>
-                                            <td><input type="number" class="table-input" min="0" max="100" step="0.01" placeholder="0-100"></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <small id="serviceCount">Count: 3 numbers</small>
+                        
+                        <!-- Hidden textareas for backward compatibility -->
+                        <textarea id="txtRnArr" style="display: none;"></textarea>
+                        <textarea id="txtRnServ" style="display: none;"></textarea>
+                    </div>
+                    
+                    <!-- Generated Section -->
+                    <div id="generatedSection" class="method-section">
+                        <h3>Generate Random Numbers</h3>
+                        <p>Choose a generation method and parameters</p>
+                        
+                        <div class="generation-method-selector">
+                            <label class="radio-label">
+                                <input type="radio" name="genMethod" value="LCG" checked onchange="switchGenMethod('LCG')">
+                                <span>Linear Congruential Generator (LCG)</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="genMethod" value="MidSquare" onchange="switchGenMethod('MidSquare')">
+                                <span>Mid-Square Method</span>
+                            </label>
                         </div>
-
-                        <!-- LCG Parameters for Service -->
-                        <div id="service-lcg-section" class="method-section">
-                            <h5>LCG Parameters for Service Numbers</h5>
+                        
+                        <!-- LCG Parameters -->
+                        <div id="lcgParams" class="gen-params">
+                            <h4>LCG Parameters</h4>
                             <div class="params-grid">
                                 <div class="input-group">
                                     <label>Multiplier (a):</label>
-                                    <input type="number" id="service-lcg-a" min="0" placeholder="e.g., 1664525">
+                                    <input type="number" id="lcgA" min="0" placeholder="e.g., 1664525">
                                 </div>
                                 <div class="input-group">
                                     <label>Increment (c):</label>
-                                    <input type="number" id="service-lcg-c" min="0" placeholder="e.g., 1013904223">
+                                    <input type="number" id="lcgC" min="0" placeholder="e.g., 1013904223">
                                 </div>
                                 <div class="input-group">
                                     <label>Modulus (m):</label>
-                                    <input type="number" id="service-lcg-m" min="1" placeholder="e.g., 2^32">
+                                    <input type="number" id="lcgM" min="1" placeholder="e.g., 2^32">
                                 </div>
                                 <div class="input-group">
                                     <label>Initial Seed (Z₀):</label>
-                                    <input type="number" id="service-lcg-seed" min="0" placeholder="e.g., 12345">
+                                    <input type="number" id="lcgSeed" min="0" placeholder="e.g., 12345">
                                 </div>
                             </div>
-                            <div class="input-group">
-                                <label>Number of Random Numbers:</label>
-                                <input type="number" id="service-lcg-count" min="1" placeholder="e.g., 50">
-                            </div>
-                            <button class="btn btn-secondary" onclick="generateTableRandomNumbers('service', 'lcg')">Generate Service Numbers</button>
                         </div>
-
-                        <!-- Mid-Square Parameters for Service -->
-                        <div id="service-midsquare-section" class="method-section">
-                            <h5>Mid-Square Parameters for Service Numbers</h5>
+                        
+                        <!-- Mid-Square Parameters -->
+                        <div id="midSquareParams" class="gen-params hidden">
+                            <h4>Mid-Square Parameters</h4>
                             <div class="input-group">
                                 <label>Seed (4-digit, 1000-9999):</label>
-                                <input type="number" id="service-midsquare-seed" min="1000" max="9999" placeholder="e.g., 1234">
+                                <input type="number" id="midSquareSeed" min="1000" max="9999" placeholder="e.g., 1234">
                             </div>
-                            <div class="input-group">
-                                <label>Number of Random Numbers:</label>
-                                <input type="number" id="service-midsquare-count" min="1" placeholder="e.g., 50">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Number of Arrival Random Numbers:</label>
+                            <input type="number" id="genArrCount" min="1" placeholder="e.g., 50">
+                            <small>For customers 2..N (recommended: enough for time limit)</small>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Number of Service Random Numbers:</label>
+                            <input type="number" id="genServCount" min="1" placeholder="e.g., 50">
+                            <small>For all customers (recommended: enough for time limit)</small>
+                        </div>
+                        
+                        <button class="btn btn-secondary" onclick="generateRandomNumbers()">Generate Random Numbers</button>
+                        
+                        <div id="generatedResults" class="generated-results hidden">
+                            <h4>Generated Numbers</h4>
+                            <div class="results-display">
+                                <div>
+                                    <strong>Arrival Numbers:</strong>
+                                    <textarea id="genArrNumbers" rows="3" readonly></textarea>
+                                </div>
+                                <div>
+                                    <strong>Service Numbers:</strong>
+                                    <textarea id="genServNumbers" rows="3" readonly></textarea>
+                                </div>
                             </div>
-                            <button class="btn btn-secondary" onclick="generateTableRandomNumbers('service', 'midsquare')">Generate Service Numbers</button>
+                            <button class="btn btn-secondary" onclick="useGeneratedNumbers()">Use These Numbers</button>
                         </div>
                     </div>
                 </div>
-
-                <!-- Hidden textareas for backward compatibility -->
-                <textarea id="txtRnArr" style="display: none;"></textarea>
-                <textarea id="txtRnServ" style="display: none;"></textarea>
 
                 <div class="button-group" style="margin-top: 30px;">
                     <button class="btn btn-primary" onclick="runSimulationFromUI()">Run Simulation → Show Results (Step 5)</button>
@@ -432,90 +412,141 @@
     <script src="../../js/singleServer/singleLimitedTime.js"></script>
     <script>
         // ========== Random Number Generation Functions ==========
-
-        function switchTableMethod(tableType, method) {
-            // Remove active class from all tabs for this table
-            document.querySelectorAll(`#${tableType}-tab-manual, #${tableType}-tab-lcg, #${tableType}-tab-midsquare`).forEach(tab => {
-                tab.classList.remove('active');
-            });
-
-            // Remove active class from all sections for this table
-            document.querySelectorAll(`#${tableType}-manual-section, #${tableType}-lcg-section, #${tableType}-midsquare-section`).forEach(section => {
-                section.classList.remove('active');
-            });
-
-            // Add active class to selected tab and section
-            document.getElementById(`${tableType}-tab-${method}`).classList.add('active');
-            document.getElementById(`${tableType}-${method}-section`).classList.add('active');
+        
+        function switchRandomMethod(method) {
+            document.querySelectorAll('.method-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.method-section').forEach(section => section.classList.remove('active'));
+            
+            if (method === 'manual') {
+                document.getElementById('tabManual').classList.add('active');
+                document.getElementById('manualSection').classList.add('active');
+            } else {
+                document.getElementById('tabGenerated').classList.add('active');
+                document.getElementById('generatedSection').classList.add('active');
+            }
         }
-
-        function generateTableRandomNumbers(tableType, method) {
+        
+        function switchGenMethod(method) {
+            if (method === 'LCG') {
+                document.getElementById('lcgParams').classList.remove('hidden');
+                document.getElementById('midSquareParams').classList.add('hidden');
+            } else {
+                document.getElementById('lcgParams').classList.add('hidden');
+                document.getElementById('midSquareParams').classList.remove('hidden');
+            }
+        }
+        
+        function validateRandomNumbers(textarea) {
+            updateRandomNumberCounts();
+        }
+        
+        function generateRandomNumbers() {
             try {
-                const countInputId = `${tableType}-${method}-count`;
-                const count = parseInt(document.getElementById(countInputId).value);
-
-                if (isNaN(count) || count <= 0) {
-                    alert(`Please enter a valid number of random numbers for ${tableType}.`);
+                const method = document.querySelector('input[name="genMethod"]:checked').value;
+                const arrCount = parseInt(document.getElementById('genArrCount').value);
+                const servCount = parseInt(document.getElementById('genServCount').value);
+                
+                if (isNaN(arrCount) || arrCount <= 0) {
+                    alert('Please enter a valid number of arrival random numbers.');
                     return;
                 }
-
-                let numbers = [];
-
-                if (method === 'lcg') {
-                    const a = parseFloat(document.getElementById(`${tableType}-lcg-a`).value);
-                    const c = parseFloat(document.getElementById(`${tableType}-lcg-c`).value);
-                    const m = parseFloat(document.getElementById(`${tableType}-lcg-m`).value);
-                    const seed = parseFloat(document.getElementById(`${tableType}-lcg-seed`).value);
-
+                
+                if (isNaN(servCount) || servCount <= 0) {
+                    alert('Please enter a valid number of service random numbers.');
+                    return;
+                }
+                
+                let arrNumbers = [];
+                let servNumbers = [];
+                
+                if (method === 'LCG') {
+                    const a = parseFloat(document.getElementById('lcgA').value);
+                    const c = parseFloat(document.getElementById('lcgC').value);
+                    const m = parseFloat(document.getElementById('lcgM').value);
+                    const seed = parseFloat(document.getElementById('lcgSeed').value);
+                    
                     if (isNaN(a) || isNaN(c) || isNaN(m) || isNaN(seed)) {
                         alert('Please enter all LCG parameters.');
                         return;
                     }
+                    
+                    const arrRandoms = generateLCG(a, c, m, seed, arrCount);
+                    const servRandoms = generateLCG(a, c, m, seed + arrCount, servCount);
 
-                    numbers = generateLCG(a, c, m, seed, count);
-
-                } else if (method === 'midsquare') {
-                    const seed = parseInt(document.getElementById(`${tableType}-midsquare-seed`).value);
-
+                    // Random numbers are already in 0-100 range with approximation applied
+                    arrNumbers = arrRandoms;
+                    servNumbers = servRandoms;
+                    
+                } else if (method === 'MidSquare') {
+                    const seed = parseInt(document.getElementById('midSquareSeed').value);
+                    
                     if (isNaN(seed) || seed < 1000 || seed > 9999) {
                         alert('Please enter a valid 4-digit seed (1000-9999).');
                         return;
                     }
+                    
+                    const arrRandoms = generateMidSquare(seed, arrCount);
+                    const servRandoms = generateMidSquare(seed + 1000, servCount);
 
-                    numbers = generateMidSquare(seed, count);
+                    // Random numbers are already in 0-100 range with approximation applied
+                    arrNumbers = arrRandoms;
+                    servNumbers = servRandoms;
                 }
-
-                // Populate the table with generated numbers
-                const tbodyId = tableType === 'arrival' ? 'tbodyRnArr' : 'tbodyRnServ';
-                const tbody = document.getElementById(tbodyId);
-                tbody.innerHTML = '';
-
-                numbers.forEach(num => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, '${tableType}')" title="Delete row">🗑️</button></td>
-                        <td><input type="number" class="table-input" min="0" max="100" step="0.01" value="${num}" placeholder="0-100" onchange="updateRandomNumberCounts()"></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-
-                // Update counts and switch to manual view
-                updateRandomNumberCounts();
-                switchTableMethod(tableType, 'manual');
-
-                alert(`${tableType.charAt(0).toUpperCase() + tableType.slice(1)} numbers generated successfully and applied to the table.`);
-
+                
+                // Display results
+                document.getElementById('genArrNumbers').value = arrNumbers.join(', ');
+                document.getElementById('genServNumbers').value = servNumbers.join(', ');
+                document.getElementById('generatedResults').classList.remove('hidden');
+                
             } catch (error) {
                 alert('Error generating random numbers: ' + error.message);
             }
         }
+        
+        function useGeneratedNumbers() {
+            const arrNumbers = document.getElementById('genArrNumbers').value;
+            const servNumbers = document.getElementById('genServNumbers').value;
+            
+            if (!arrNumbers || !servNumbers) {
+                alert('Please generate numbers first.');
+                return;
+            }
+            
+            // Parse and populate arrival table
+            const arrNums = arrNumbers.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n >= 0 && n <= 100);
+            const tbodyArr = document.getElementById('tbodyRnArr');
+            tbodyArr.innerHTML = '';
+            arrNums.forEach(num => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'arrival')" title="Delete row">🗑️</button></td>
+                    <td><input type="number" class="table-input" min="0" max="100" step="0.01" value="${num}" placeholder="0-100" onchange="updateRandomNumberCounts()"></td>
+                `;
+                tbodyArr.appendChild(tr);
+            });
 
-        function validateRandomNumbers(textarea) {
-            // This function is kept for backward compatibility but not actively used
-            // Random numbers are now managed through table cells
+            // Parse and populate service table
+            const servNums = servNumbers.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n >= 0 && n <= 100);
+            const tbodyServ = document.getElementById('tbodyRnServ');
+            tbodyServ.innerHTML = '';
+            servNums.forEach(num => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'service')" title="Delete row">🗑️</button></td>
+                    <td><input type="number" class="table-input" min="0" max="100" step="0.01" value="${num}" placeholder="0-100" onchange="updateRandomNumberCounts()"></td>
+                `;
+                tbodyServ.appendChild(tr);
+            });
+            
+            // Update counts and hidden textareas
             updateRandomNumberCounts();
+            
+            // Switch to manual tab to show the filled values
+            switchRandomMethod('manual');
+            
+            alert('Generated numbers have been applied to the tables.');
         }
-
+        
         // Initialize counts on page load
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {

@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/simulation.css">
     <link rel="stylesheet" href="../css/inventory.css">
-    <link rel="stylesheet" href="../css/multiLimitedCustomer.css">
 </head>
 <body>
     <div class="container inventory-container">
@@ -110,195 +109,131 @@
         <div id="step3" class="tab-content">
             <div class="tab-body">
                 <h2>Step 3: Random Numbers</h2>
-                <p>Choose how to provide random numbers for each table: Manual Input, LCG method, or Mid-Square method</p>
 
-                <div class="random-tables-container">
-                    <!-- Demand Time Random Numbers Table -->
-                    <div class="random-table-box">
-                        <h4>Demand Random Numbers</h4>
+                <div class="method-tabs">
+                    <button class="method-tab active" id="tabManual" onclick="switchRandomMethod('manual')">Manual Random Entry</button>
+                    <button class="method-tab" id="tabLCG" onclick="switchRandomMethod('LCG')">LCG Generation</button>
+                    <button class="method-tab" id="tabMidSquare" onclick="switchRandomMethod('MidSquare')">MidSquare Generation</button>
+                </div>
 
-                        <!-- Method Selection for Demand -->
-                        <div class="method-selection">
-                            <div class="method-tabs">
-                                <button class="method-tab active" onclick="switchTableMethod('demand', 'manual')" id="demand-tab-manual">Manual Input</button>
-                                <button class="method-tab" onclick="switchTableMethod('demand', 'lcg')" id="demand-tab-lcg">LCG Method</button>
-                                <button class="method-tab" onclick="switchTableMethod('demand', 'midsquare')" id="demand-tab-midsquare">Mid-Square Method</button>
-                            </div>
+                <!-- Manual Entry -->
+                <div id="manualRandomSection" class="method-section active">
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Number of Demand Random Numbers:</label>
+                            <input type="number" id="numDemandRandoms" value="15" min="1">
                         </div>
-
-                        <!-- Manual Input for Demand -->
-                        <div id="demand-manual-section" class="method-section active">
-                            <div class="table-controls">
-                                <button class="btn-add-row" onclick="addRandomNumberRow('demand')">Add Row</button>
-                                <input type="number" id="demandManualRowCount" min="1" max="100" value="15" placeholder="Rows" style="width: 80px; margin: 0 5px; padding: 5px;">
-                                <button class="btn btn-secondary" onclick="generateRandomNumberRows('demand')">Generate Rows</button>
-                                <button class="btn btn-secondary" onclick="updateRandomNumberCounts()">Update Count</button>
-                            </div>
-                            <div class="table-container">
-                                <table id="tableRnDemand" class="editable-table random-numbers-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 50px;"></th>
-                                            <th>Random Number</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyRnDemand">
-                                        <tr>
-                                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'demand')" title="Delete row">🗑️</button></td>
-                                            <td><input type="number" class="table-input" min="0" max="100" step="0.01" placeholder="0-100"></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'demand')" title="Delete row">🗑️</button></td>
-                                            <td><input type="number" class="table-input" min="0" max="100" step="0.01" placeholder="0-100"></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'demand')" title="Delete row">🗑️</button></td>
-                                            <td><input type="number" class="table-input" min="0" max="100" step="0.01" placeholder="0-100"></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <small id="demandCount">Count: 3 numbers</small>
-                        </div>
-
-                        <!-- LCG Parameters for Demand -->
-                        <div id="demand-lcg-section" class="method-section">
-                            <h5>LCG Parameters for Demand Numbers</h5>
-                            <div class="params-grid">
-                                <div class="input-group">
-                                    <label>Multiplier (a):</label>
-                                    <input type="number" id="demand-lcg-a" min="0" placeholder="e.g., 1664525">
-                                </div>
-                                <div class="input-group">
-                                    <label>Increment (c):</label>
-                                    <input type="number" id="demand-lcg-c" min="0" placeholder="e.g., 1013904223">
-                                </div>
-                                <div class="input-group">
-                                    <label>Modulus (m):</label>
-                                    <input type="number" id="demand-lcg-m" min="1" placeholder="e.g., 2^32">
-                                </div>
-                                <div class="input-group">
-                                    <label>Initial Seed (Z₀):</label>
-                                    <input type="number" id="demand-lcg-seed" min="0" placeholder="e.g., 12345">
-                                </div>
-                            </div>
-                            <div class="input-group">
-                                <label>Number of Random Numbers:</label>
-                                <input type="number" id="demand-lcg-count" min="1" placeholder="e.g., 15">
-                            </div>
-                            <button class="btn btn-secondary" onclick="generateTableRandomNumbers('demand', 'lcg')">Generate Demand Numbers</button>
-                        </div>
-
-                        <!-- Mid-Square Parameters for Demand -->
-                        <div id="demand-midsquare-section" class="method-section">
-                            <h5>Mid-Square Parameters for Demand Numbers</h5>
-                            <div class="input-group">
-                                <label>Seed (4-digit, 1000-9999):</label>
-                                <input type="number" id="demand-midsquare-seed" min="1000" max="9999" placeholder="e.g., 1234">
-                            </div>
-                            <div class="input-group">
-                                <label>Number of Random Numbers:</label>
-                                <input type="number" id="demand-midsquare-count" min="1" placeholder="e.g., 15">
-                            </div>
-                            <button class="btn btn-secondary" onclick="generateTableRandomNumbers('demand', 'midsquare')">Generate Demand Numbers</button>
+                        <div class="input-group">
+                            <label>Number of Lead Time Random Numbers:</label>
+                            <input type="number" id="numLeadTimeRandoms" value="5" min="1">
                         </div>
                     </div>
+                    <button class="btn" onclick="generateRandomInputs()">Generate Input Fields</button>
 
-                    <!-- Lead Time Random Numbers Table -->
-                    <div class="random-table-box">
-                        <h4>Lead Time Random Numbers</h4>
+                    <h2>Demand Random Numbers</h2>
+                    <div id="demandRandoms" class="random-numbers-grid"></div>
 
-                        <!-- Method Selection for Lead Time -->
-                        <div class="method-selection">
-                            <div class="method-tabs">
-                                <button class="method-tab active" onclick="switchTableMethod('leadtime', 'manual')" id="leadtime-tab-manual">Manual Input</button>
-                                <button class="method-tab" onclick="switchTableMethod('leadtime', 'lcg')" id="leadtime-tab-lcg">LCG Method</button>
-                                <button class="method-tab" onclick="switchTableMethod('leadtime', 'midsquare')" id="leadtime-tab-midsquare">Mid-Square Method</button>
-                            </div>
-                        </div>
+                    <h2>Lead Time Random Numbers</h2>
+                    <div id="leadTimeRandoms" class="random-numbers-grid"></div>
+                </div>
 
-                        <!-- Manual Input for Lead Time -->
-                        <div id="leadtime-manual-section" class="method-section active">
-                            <div class="table-controls">
-                                <button class="btn-add-row" onclick="addRandomNumberRow('leadtime')">Add Row</button>
-                                <input type="number" id="leadtimeManualRowCount" min="1" max="100" value="5" placeholder="Rows" style="width: 80px; margin: 0 5px; padding: 5px;">
-                                <button class="btn btn-secondary" onclick="generateRandomNumberRows('leadtime')">Generate Rows</button>
-                                <button class="btn btn-secondary" onclick="updateRandomNumberCounts()">Update Count</button>
-                            </div>
-                            <div class="table-container">
-                                <table id="tableRnLeadTime" class="editable-table random-numbers-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 50px;"></th>
-                                            <th>Random Number</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyRnLeadTime">
-                                        <tr>
-                                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'leadtime')" title="Delete row">🗑️</button></td>
-                                            <td><input type="number" class="table-input" min="0" max="100" step="0.01" placeholder="0-100"></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'leadtime')" title="Delete row">🗑️</button></td>
-                                            <td><input type="number" class="table-input" min="0" max="100" step="0.01" placeholder="0-100"></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, 'leadtime')" title="Delete row">🗑️</button></td>
-                                            <td><input type="number" class="table-input" min="0" max="100" step="0.01" placeholder="0-100"></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <small id="leadtimeCount">Count: 3 numbers</small>
-                        </div>
-
-                        <!-- LCG Parameters for Lead Time -->
-                        <div id="leadtime-lcg-section" class="method-section">
-                            <h5>LCG Parameters for Lead Time Numbers</h5>
-                            <div class="params-grid">
-                                <div class="input-group">
-                                    <label>Multiplier (a):</label>
-                                    <input type="number" id="leadtime-lcg-a" min="0" placeholder="e.g., 1664525">
-                                </div>
-                                <div class="input-group">
-                                    <label>Increment (c):</label>
-                                    <input type="number" id="leadtime-lcg-c" min="0" placeholder="e.g., 1013904223">
-                                </div>
-                                <div class="input-group">
-                                    <label>Modulus (m):</label>
-                                    <input type="number" id="leadtime-lcg-m" min="1" placeholder="e.g., 2^32">
-                                </div>
-                                <div class="input-group">
-                                    <label>Initial Seed (Z₀):</label>
-                                    <input type="number" id="leadtime-lcg-seed" min="0" placeholder="e.g., 12345">
-                                </div>
+                <!-- LCG Generation -->
+                <div id="lcgRandomSection" class="method-section">
+                    <h3>Linear Congruential Generator (LCG)</h3>
+                    <p>Generate random numbers using LCG method</p>
+                    
+                    <div class="gen-params">
+                        <h4>LCG Parameters</h4>
+                        <div class="params-grid">
+                            <div class="input-group">
+                                <label>Multiplier (a):</label>
+                                <input type="number" id="lcgA" min="0" placeholder="e.g., 1664525">
                             </div>
                             <div class="input-group">
-                                <label>Number of Random Numbers:</label>
-                                <input type="number" id="leadtime-lcg-count" min="1" placeholder="e.g., 5">
-                            </div>
-                            <button class="btn btn-secondary" onclick="generateTableRandomNumbers('leadtime', 'lcg')">Generate Lead Time Numbers</button>
-                        </div>
-
-                        <!-- Mid-Square Parameters for Lead Time -->
-                        <div id="leadtime-midsquare-section" class="method-section">
-                            <h5>Mid-Square Parameters for Lead Time Numbers</h5>
-                            <div class="input-group">
-                                <label>Seed (4-digit, 1000-9999):</label>
-                                <input type="number" id="leadtime-midsquare-seed" min="1000" max="9999" placeholder="e.g., 1234">
+                                <label>Increment (c):</label>
+                                <input type="number" id="lcgC" min="0" placeholder="e.g., 1013904223">
                             </div>
                             <div class="input-group">
-                                <label>Number of Random Numbers:</label>
-                                <input type="number" id="leadtime-midsquare-count" min="1" placeholder="e.g., 5">
+                                <label>Modulus (m):</label>
+                                <input type="number" id="lcgM" min="1" placeholder="e.g., 2^32">
                             </div>
-                            <button class="btn btn-secondary" onclick="generateTableRandomNumbers('leadtime', 'midsquare')">Generate Lead Time Numbers</button>
+                            <div class="input-group">
+                                <label>Initial Seed (Z₀):</label>
+                                <input type="number" id="lcgSeed" min="0" placeholder="e.g., 12345">
+                            </div>
                         </div>
+                    </div>
+                    
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Number of Demand Random Numbers:</label>
+                            <input type="number" id="lcgDemandCount" min="1" placeholder="e.g., 15">
+                        </div>
+                        <div class="input-group">
+                            <label>Number of Lead Time Random Numbers:</label>
+                            <input type="number" id="lcgLeadTimeCount" min="1" placeholder="e.g., 5">
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="generateLCGRandoms()">Generate Random Numbers</button>
+                    
+                    <div id="lcgResults" class="generated-results hidden">
+                        <h4>Generated Numbers</h4>
+                        <div class="results-display">
+                            <div>
+                                <strong>Demand Numbers:</strong>
+                                <div id="lcgDemandPreview" class="random-preview"></div>
+                            </div>
+                            <div>
+                                <strong>Lead Time Numbers:</strong>
+                                <div id="lcgLeadTimePreview" class="random-preview"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="useLCGNumbers()">Use These Numbers</button>
                     </div>
                 </div>
 
-                <!-- Hidden textareas for backward compatibility -->
-                <textarea id="txtRnDemand" style="display: none;"></textarea>
-                <textarea id="txtRnLeadTime" style="display: none;"></textarea>
+                <!-- MidSquare Generation -->
+                <div id="midSquareRandomSection" class="method-section">
+                    <h3>Mid-Square Method</h3>
+                    <p>Generate random numbers using Mid-Square method</p>
+                    
+                    <div class="gen-params">
+                        <h4>Mid-Square Parameters</h4>
+                        <div class="input-group">
+                            <label>Seed (4-digit, 1000-9999):</label>
+                            <input type="number" id="midSquareSeed" min="1000" max="9999" placeholder="e.g., 1234">
+                        </div>
+                    </div>
+                    
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>Number of Demand Random Numbers:</label>
+                            <input type="number" id="midSquareDemandCount" min="1" placeholder="e.g., 15">
+                        </div>
+                        <div class="input-group">
+                            <label>Number of Lead Time Random Numbers:</label>
+                            <input type="number" id="midSquareLeadTimeCount" min="1" placeholder="e.g., 5">
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="generateMidSquareRandoms()">Generate Random Numbers</button>
+                    
+                    <div id="midSquareResults" class="generated-results hidden">
+                        <h4>Generated Numbers</h4>
+                        <div class="results-display">
+                            <div>
+                                <strong>Demand Numbers:</strong>
+                                <div id="midSquareDemandPreview" class="random-preview"></div>
+                            </div>
+                            <div>
+                                <strong>Lead Time Numbers:</strong>
+                                <div id="midSquareLeadTimePreview" class="random-preview"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="useMidSquareNumbers()">Use These Numbers</button>
+                    </div>
+                </div>
 
                 <div class="nav-buttons">
                     <button class="btn btn-secondary" onclick="goToStep(2)">Back</button>

@@ -5,8 +5,18 @@ function applyDecimalApproximation(value) {
     // Convert to 0-100 scale
     let scaledValue = value * 100;
 
-    // Round to nearest integer
-    scaledValue = Math.round(scaledValue);
+    // Handle decimal rounding (but don't round 0)
+    if (scaledValue !== 0 && scaledValue % 1 !== 0) { // Has decimal part and is not 0
+        const decimalPart = Math.round((scaledValue % 1) * 100) / 100; // Round to 2 decimal places to avoid floating point issues
+        if (decimalPart >= 0.5 && decimalPart <= 0.9) {
+            // Round up to next greatest integer
+            scaledValue = Math.ceil(scaledValue);
+        } else if (decimalPart >= 0.1 && decimalPart <= 0.4) {
+            // Round down (floor)
+            scaledValue = Math.floor(scaledValue);
+        }
+        // Note: decimals 0.0-0.09 and 0.91-0.99 are not explicitly handled, so they remain as parsed
+    }
 
     return scaledValue;
 }
