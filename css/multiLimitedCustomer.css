@@ -892,3 +892,22 @@ textarea {
     display: block !important;
 }
 
+/* ========== Table Cell Selection Styles ========== */
+.selected-cell {
+    background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%) !important;
+    color: white !important;
+    font-weight: bold !important;
+    transform: scale(1.05);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(139, 69, 19, 0.5);
+}
+
+#randomNumberTable td {
+    transition: all 0.2s ease;
+}
+
+#randomNumberTable td:hover:not(.selected-cell) {
+    background: rgba(139, 69, 19, 0.1);
+    cursor: pointer;
+}
+
