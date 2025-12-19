@@ -366,30 +366,28 @@ function readRandomNumbersFromTable(type) {
     return numbers;
 }
 
-function switchRandomMethod(method) {
-    randomMethod = method === 'manual' ? 'manual' : 'generated';
-    document.querySelectorAll('.method-tab').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.method-section').forEach(sec => sec.classList.remove('active'));
+function switchTableMethod(table, method) {
+    // Update tab buttons
+    document.querySelectorAll(`#tab${table.charAt(0).toUpperCase() + table.slice(1)}Manual, #tab${table.charAt(0).toUpperCase() + table.slice(1)}Generated`).forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll(`#${table}ManualSection, #${table}GeneratedSection`).forEach(section => section.classList.remove('active'));
+
     if (method === 'manual') {
-        document.getElementById('tabManual').classList.add('active');
-        document.getElementById('manualSection').classList.add('active');
+        document.getElementById(`tab${table.charAt(0).toUpperCase() + table.slice(1)}Manual`).classList.add('active');
+        document.getElementById(`${table}ManualSection`).classList.add('active');
         updateRandomNumberInputsMax();
-    } else if (method === 'generated') {
-        document.getElementById('tabGenerated').classList.add('active');
-        document.getElementById('generatedSection').classList.add('active');
+    } else {
+        document.getElementById(`tab${table.charAt(0).toUpperCase() + table.slice(1)}Generated`).classList.add('active');
+        document.getElementById(`${table}GeneratedSection`).classList.add('active');
     }
 }
 
-function switchGenMethod(method) {
-    const lcgParams = document.getElementById('lcgParams');
-    const midSquareParams = document.getElementById('midSquareParams');
-    
+function switchGenMethod(table, method) {
     if (method === 'LCG') {
-        lcgParams.classList.remove('hidden');
-        midSquareParams.classList.add('hidden');
-    } else if (method === 'MidSquare') {
-        lcgParams.classList.add('hidden');
-        midSquareParams.classList.remove('hidden');
+        document.getElementById(`${table}LcgParams`).classList.remove('hidden');
+        document.getElementById(`${table}MidSquareParams`).classList.add('hidden');
+    } else {
+        document.getElementById(`${table}LcgParams`).classList.add('hidden');
+        document.getElementById(`${table}MidSquareParams`).classList.remove('hidden');
     }
 }
 
@@ -644,6 +642,134 @@ function displayMidSquareTable(containerId, data, initialSeed) {
     
     html += '</tbody></table></div>';
     container.innerHTML = html;
+}
+
+function generateTableRandomNumbers(table) {
+    try {
+        const method = document.querySelector(`input[name="${table}GenMethod"]:checked`).value;
+        const countInput = document.getElementById(table === 'demand' ? 'genDemandCount' : 'genLeadTimeCount');
+        const count = parseInt(countInput.value);
+
+        if (isNaN(count) || count <= 0) {
+            showError(`Please enter a valid number of ${table} random numbers.`);
+            return;
+        }
+
+        let randoms = [];
+        let detailed = [];
+        let seed = 0;
+        let hasCycle = false;
+
+        if (method === 'LCG') {
+            const a = parseFloat(document.getElementById(`${table}LcgA`).value);
+            const c = parseFloat(document.getElementById(`${table}LcgC`).value);
+            const m = parseFloat(document.getElementById(`${table}LcgM`).value);
+            seed = parseFloat(document.getElementById(`${table}LcgSeed`).value);
+
+            if (isNaN(a) || isNaN(c) || isNaN(m) || isNaN(seed)) {
+                showError('Please enter all LCG parameters.');
+                return;
+            }
+
+            // Generate detailed data for display
+            const detailedResult = generateLCGDetailed(a, c, m, seed, count);
+            detailed = detailedResult.data;
+
+            // Generate actual random numbers
+            const rawResult = generateLCG(a, c, m, seed, count);
+            const raw = rawResult.numbers;
+
+            // Check for cycles and show warnings
+            if (rawResult.cycleDetected) {
+                const cycleWarning = `${table.charAt(0).toUpperCase() + table.slice(1)}: Cycle detected after ${rawResult.generatedCount} numbers (cycle length: ${rawResult.cycleLength}). Please complete the remaining numbers manually.`;
+                showError(cycleWarning);
+                hasCycle = true;
+            }
+
+            // Convert to proper range
+            const multiplier = Math.pow(10, getDecimalPlaces(table === 'demand' ? demandData : leadTimeData));
+
+            randoms = raw.map(n => {
+                const scaled = Math.floor((n / 100) * multiplier);
+                return scaled === 0 ? multiplier : scaled;
+            });
+
+            // Display detailed table
+            displayLCGTable(table === 'demand' ? 'genDemandPreview' : 'genLeadTimePreview', detailed, seed, detailedResult.cycleDetected, detailedResult.cycleLength);
+        } else if (method === 'MidSquare') {
+            seed = parseInt(document.getElementById(`${table}MidSquareSeed`).value);
+
+            if (isNaN(seed) || seed < 1000 || seed > 9999) {
+                showError('Please enter a valid 4-digit seed (1000-9999).');
+                return;
+            }
+
+            // Generate detailed data for display
+            detailed = generateMidSquareDetailed(seed, count);
+
+            // Generate actual random numbers
+            const raw = generateMidSquare(seed, count);
+
+            // Convert to proper range
+            const multiplier = Math.pow(10, getDecimalPlaces(table === 'demand' ? demandData : leadTimeData));
+
+            randoms = raw.map(n => {
+                const scaled = Math.floor((n / 100) * multiplier);
+                return scaled === 0 ? multiplier : scaled;
+            });
+
+            // Display detailed table
+            displayMidSquareTable(table === 'demand' ? 'genDemandPreview' : 'genLeadTimePreview', detailed);
+        }
+
+        // Store generated numbers
+        if (table === 'demand') {
+            autoDemandRandoms = randoms;
+        } else {
+            autoLeadRandoms = randoms;
+        }
+
+        // Show results
+        const resultsDiv = document.getElementById(`${table}GeneratedResults`);
+        resultsDiv.classList.remove('hidden');
+        clearError();
+
+    } catch (error) {
+        showError('Error generating random numbers: ' + error.message);
+    }
+}
+
+function useGeneratedTableNumbers(table) {
+    const randoms = table === 'demand' ? autoDemandRandoms : autoLeadRandoms;
+
+    if (randoms.length === 0) {
+        showError('Please generate numbers first.');
+        return;
+    }
+
+    // Clear existing rows
+    const tbody = document.getElementById(table === 'demand' ? 'tbodyRnDemand' : 'tbodyRnLeadTime');
+
+    while (tbody.children.length > 0) {
+        tbody.removeChild(tbody.firstChild);
+    }
+
+    // Add rows with generated numbers
+    const maxValue = getMaxRandomValue();
+
+    randoms.forEach(num => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="action-cell"><button class="btn-delete-row" onclick="deleteRandomNumberRow(this, '${table}')" title="Delete row">🗑️</button></td>
+            <td><input type="number" class="table-input" min="0" max="${maxValue}" value="${num}" onchange="updateRandomNumberCounts()"></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Switch to manual tab
+    switchTableMethod(table, 'manual');
+    updateRandomNumberCounts();
+    clearError();
 }
 
 function useGeneratedNumbers() {

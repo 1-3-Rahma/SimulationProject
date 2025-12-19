@@ -645,10 +645,6 @@ textarea {
 }
 
 /* ========== Random Number Generation Styles ========== */
-.random-method-selector {
-    margin: 20px 0;
-}
-
 .random-tables-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -672,6 +668,52 @@ textarea {
     text-align: center;
     border-bottom: 2px solid #8B4513;
     padding-bottom: 10px;
+}
+
+.table-method-selector {
+    margin: 15px 0;
+    border-bottom: 2px solid #D2B48C;
+    padding-bottom: 10px;
+}
+
+.table-method-selector .method-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 0;
+}
+
+.table-method-selector .method-tab {
+    padding: 10px 16px;
+    background: rgba(245, 230, 211, 0.8);
+    color: #5C4033;
+    border: 2px solid #D2B48C;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    flex: 1;
+}
+
+.table-method-selector .method-tab:hover {
+    background: #E6D5C3;
+    color: #5C4033;
+}
+
+.table-method-selector .method-tab.active {
+    background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+    color: white;
+    border-color: #8B4513;
+}
+
+.table-method-section {
+    display: none;
+    margin-top: 15px;
+}
+
+.table-method-section.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
 }
 
 .random-numbers-table {
