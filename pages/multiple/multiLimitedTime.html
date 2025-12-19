@@ -448,8 +448,23 @@
                         return;
                     }
                     
-                    const arrRandoms = generateLCG(a, c, m, seed, arrCount);
-                    const servRandoms = generateLCG(a, c, m, seed + arrCount, servCount);
+                    const arrRandomsResult = generateLCG(a, c, m, seed, arrCount);
+                    const servRandomsResult = generateLCG(a, c, m, seed, servCount);
+                    const arrRandoms = arrRandomsResult.numbers;
+                    const servRandoms = servRandomsResult.numbers;
+
+                    // Check for cycles and show warnings
+                    let cycleWarning = '';
+                    if (arrRandomsResult.cycleDetected) {
+                        cycleWarning += `Arrival: Cycle detected after ${arrRandomsResult.generatedCount} numbers (cycle length: ${arrRandomsResult.cycleLength}). `;
+                    }
+                    if (servRandomsResult.cycleDetected) {
+                        cycleWarning += `Service: Cycle detected after ${servRandomsResult.generatedCount} numbers (cycle length: ${servRandomsResult.cycleLength}). `;
+                    }
+                    if (cycleWarning) {
+                        cycleWarning += 'Please complete the remaining numbers manually.';
+                        alert(cycleWarning);
+                    }
 
                     // Random numbers are already in 0-100 range with approximation applied
                     arrNumbers = arrRandoms;

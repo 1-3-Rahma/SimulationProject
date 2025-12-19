@@ -23,17 +23,47 @@ function applyDecimalApproximation(value) {
 
 function generateLCG(a, c, m, initialZ, count) {
     const results = [];
+    const zValues = new Set(); // Track Z_i values to detect cycles
     let z = initialZ;
+    let cycleDetected = false;
+    let cycleLength = 0;
+
+    // Don't add initial seed to the set - we'll track generated values only
+    // The initial seed is Z_0, and we generate Z_1, Z_2, etc.
 
     for (let i = 0; i < count; i++) {
         z = (a * z + c) % m;
+        
+        // Check if this Z_i value has been seen before OR if it equals the initial seed (cycle detected)
+        // If we've seen it or it's the initial seed again, we've completed the full cycle
+        // Include this value and stop
+        if (zValues.has(z) || z === initialZ) {
+            cycleDetected = true;
+            // Cycle length is the number of unique values we've generated
+            cycleLength = z === initialZ ? zValues.size + 1 : zValues.size;
+            // Include this value in results as it's the last value of the cycle
+            const normalizedValue = z / m;
+            const approximatedValue = applyDecimalApproximation(normalizedValue);
+            results.push(approximatedValue);
+            break; // Stop generation when cycle is detected
+        }
+        
+        // Add to set and results
+        zValues.add(z);
+        
         // Normalize to 0-1 range, then apply approximation logic
         const normalizedValue = z / m;
         const approximatedValue = applyDecimalApproximation(normalizedValue);
         results.push(approximatedValue);
     }
 
-    return results;
+    // Return object with results and cycle information
+    return {
+        numbers: results,
+        cycleDetected: cycleDetected,
+        cycleLength: cycleLength,
+        generatedCount: results.length
+    };
 }
 
 function generateMidSquare(seed, count) {

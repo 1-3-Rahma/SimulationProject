@@ -417,15 +417,43 @@ function updateRandomNumberInputsMax() {
 
 function generateLCGDetailed(a, c, m, initialZ, count) {
     const results = [];
+    const zValues = new Set(); // Track Z_i values to detect cycles
     let z = initialZ;
+    let cycleDetected = false;
+    let cycleLength = 0;
+
+    // Don't add initial seed to the set - we'll track generated values only
+    // The initial seed is Z_0, and we generate Z_1, Z_2, etc.
     
     for (let i = 0; i < count; i++) {
         z = (a * z + c) % m;
+        
+        // Check if this Z_i value has been seen before OR if it equals the initial seed (cycle detected)
+        // If we've seen it or it's the initial seed again, we've completed the full cycle
+        // Include this value and stop
+        if (zValues.has(z) || z === initialZ) {
+            cycleDetected = true;
+            // Cycle length is the number of unique values we've generated
+            cycleLength = z === initialZ ? zValues.size + 1 : zValues.size;
+            // Include this value in results as it's the last value of the cycle
+            const u = z / m;
+            results.push({ i: i + 1, z: z, u: u });
+            break; // Stop generation when cycle is detected
+        }
+        
+        // Add to set and results
+        zValues.add(z);
         const u = z / m;
         results.push({ i: i + 1, z: z, u: u });
     }
     
-    return results;
+    // Return object with results and cycle information
+    return {
+        data: results,
+        cycleDetected: cycleDetected,
+        cycleLength: cycleLength,
+        generatedCount: results.length
+    };
 }
 
 function generateRandomNumbers() {
@@ -443,6 +471,7 @@ function generateRandomNumbers() {
     let demandDetailed = [];
     let leadTimeDetailed = [];
     let seed = 0;
+    let hasCycle = false;
     
     if (method === 'LCG') {
         const a = parseFloat(document.getElementById('lcgA').value);
@@ -456,12 +485,34 @@ function generateRandomNumbers() {
         }
         
         // Generate detailed data for display
-        demandDetailed = generateLCGDetailed(a, c, m, seed, demandCount);
-        leadTimeDetailed = generateLCGDetailed(a, c, m, seed + demandCount, leadTimeCount);
+        // Use same seed for both demand and lead time
+        const demandDetailedResult = generateLCGDetailed(a, c, m, seed, demandCount);
+        const leadTimeDetailedResult = generateLCGDetailed(a, c, m, seed, leadTimeCount);
+        demandDetailed = demandDetailedResult.data;
+        leadTimeDetailed = leadTimeDetailedResult.data;
         
         // Generate actual random numbers
-        const demandRaw = generateLCG(a, c, m, seed, demandCount);
-        const leadTimeRaw = generateLCG(a, c, m, seed + demandCount, leadTimeCount);
+        // Use same seed for both demand and lead time
+        const demandRawResult = generateLCG(a, c, m, seed, demandCount);
+        const leadTimeRawResult = generateLCG(a, c, m, seed, leadTimeCount);
+        const demandRaw = demandRawResult.numbers;
+        const leadTimeRaw = leadTimeRawResult.numbers;
+        
+        // Check for cycles and show warnings
+        let cycleWarning = '';
+        hasCycle = false;
+        if (demandRawResult.cycleDetected) {
+            cycleWarning += `Demand: Cycle detected after ${demandRawResult.generatedCount} numbers (cycle length: ${demandRawResult.cycleLength}). `;
+            hasCycle = true;
+        }
+        if (leadTimeRawResult.cycleDetected) {
+            cycleWarning += `Lead Time: Cycle detected after ${leadTimeRawResult.generatedCount} numbers (cycle length: ${leadTimeRawResult.cycleLength}). `;
+            hasCycle = true;
+        }
+        if (hasCycle) {
+            cycleWarning += 'Please complete the remaining numbers manually.';
+            showError(cycleWarning);
+        }
         
         // Convert to proper range
         const demandMultiplier = Math.pow(10, getDecimalPlaces(demandData));
@@ -477,8 +528,8 @@ function generateRandomNumbers() {
         });
         
         // Display detailed tables
-        displayLCGTable('genDemandPreview', demandDetailed, seed);
-        displayLCGTable('genLeadTimePreview', leadTimeDetailed, seed + demandCount);
+        displayLCGTable('genDemandPreview', demandDetailed, seed, demandDetailedResult.cycleDetected, demandDetailedResult.cycleLength);
+        displayLCGTable('genLeadTimePreview', leadTimeDetailed, seed, leadTimeDetailedResult.cycleDetected, leadTimeDetailedResult.cycleLength);
     } else if (method === 'MidSquare') {
         seed = parseInt(document.getElementById('midSquareSeed').value);
         
@@ -518,10 +569,13 @@ function generateRandomNumbers() {
     autoLeadRandoms = leadTimeRandoms;
     
     document.getElementById('generatedResults').classList.remove('hidden');
-    clearError();
+    // Don't clear error if there's a cycle warning - let user see it
+    if (!hasCycle) {
+        clearError();
+    }
 }
 
-function displayLCGTable(containerId, data, initialSeed) {
+function displayLCGTable(containerId, data, initialSeed, cycleDetected = false, cycleLength = 0) {
     const container = document.getElementById(containerId);
     let html = '<div style="overflow-x: auto;"><table style="border-collapse: collapse; width: 100%; margin: 10px 0;">';
     html += '<thead><tr style="background-color: #f0f0f0;"><th style="border: 1px solid #ddd; padding: 8px;">i</th><th style="border: 1px solid #ddd; padding: 8px;">Z<sub>i</sub></th><th style="border: 1px solid #ddd; padding: 8px;">U<sub>i</sub></th></tr></thead>';
@@ -536,6 +590,12 @@ function displayLCGTable(containerId, data, initialSeed) {
     });
     
     html += '</tbody></table></div>';
+    
+    // Add cycle warning if detected
+    if (cycleDetected) {
+        html += `<div style="margin-top: 10px; padding: 10px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; color: #856404;"><strong>⚠ Cycle Detected:</strong> Generation stopped after ${data.length} numbers. Cycle length is ${cycleLength}. Please complete the remaining numbers manually.</div>`;
+    }
+    
     container.innerHTML = html;
 }
 
